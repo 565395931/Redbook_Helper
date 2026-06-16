@@ -1,0 +1,160 @@
+from __future__ import annotations
+
+import json
+import sqlite3
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Any, Iterator
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+DB_PATH = DATA_DIR / "redbook.db"
+
+
+def _dict_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> dict[str, Any]:
+    return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
+
+
+@contextmanager
+def connect() -> Iterator[sqlite3.Connection]:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = _dict_factory
+    conn.execute("PRAGMA foreign_keys = ON")
+    try:
+        yield conn
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def migrate() -> None:
+    with connect() as conn:
+        conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS accounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                phone TEXT,
+                cookie TEXT NOT NULL,
+                login_method TEXT NOT NULL DEFAULT 'manual_cookie',
+                login_status TEXT NOT NULL DEFAULT 'logged_in',
+                is_current INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS competitors (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                name TEXT,
+                profile_url TEXT NOT NULL,
+                last_crawled_at TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                competitor_id INTEGER REFERENCES competitors(id) ON DELETE SET NULL,
+                source TEXT NOT NULL DEFAULT 'competitor',
+                platform_note_id TEXT,
+                note_url TEXT,
+                note_type TEXT,
+                author_name TEXT,
+                title TEXT,
+                body TEXT,
+                tags_json TEXT NOT NULL DEFAULT '[]',
+                image_urls_json TEXT NOT NULL DEFAULT '[]',
+                like_count INTEGER NOT NULL DEFAULT 0,
+                collect_count INTEGER NOT NULL DEFAULT 0,
+                comment_count INTEGER NOT NULL DEFAULT 0,
+                share_count INTEGER NOT NULL DEFAULT 0,
+                score INTEGER NOT NULL DEFAULT 0,
+                summary TEXT,
+                raw_json TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                is_hidden INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(account_id, platform_note_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS drafts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                source_note_id INTEGER REFERENCES notes(id) ON DELETE SET NULL,
+                combine_theme TEXT,
+                title TEXT NOT NULL,
+                body TEXT NOT NULL,
+                duplicate_segments_json TEXT NOT NULL DEFAULT '[]',
+                status TEXT NOT NULL DEFAULT 'draft',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS published_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                title TEXT NOT NULL,
+                body TEXT NOT NULL,
+                source TEXT NOT NULL DEFAULT 'manual',
+                platform_note_id TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS brand_profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL UNIQUE REFERENCES accounts(id) ON DELETE CASCADE,
+                main_theme TEXT,
+                audience TEXT,
+                tone TEXT,
+                product_points TEXT,
+                banned_words TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS image_references (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                note_id INTEGER REFERENCES notes(id) ON DELETE SET NULL,
+                label TEXT,
+                image_url TEXT,
+                local_path TEXT,
+                analysis TEXT,
+                status TEXT NOT NULL DEFAULT 'reference',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS crawl_usage (
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                usage_date TEXT NOT NULL,
+                used_count INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY(account_id, usage_date)
+            );
+            """
+        )
+        for statement in [
+            "ALTER TABLE accounts ADD COLUMN phone TEXT",
+            "ALTER TABLE accounts ADD COLUMN login_method TEXT NOT NULL DEFAULT 'manual_cookie'",
+            "ALTER TABLE accounts ADD COLUMN login_status TEXT NOT NULL DEFAULT 'logged_in'",
+            "ALTER TABLE notes ADD COLUMN author_name TEXT",
+            "ALTER TABLE notes ADD COLUMN is_hidden INTEGER NOT NULL DEFAULT 0",
+        ]:
+            try:
+                conn.execute(statement)
+            except sqlite3.OperationalError:
+                pass
+
+
+def as_json(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False)
+
+
+def from_json(value: str | None, fallback: Any) -> Any:
+    if not value:
+        return fallback
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return fallback

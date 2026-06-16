@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+app/data/*.db
+app/data/*.db-*
+.env
+work/
+vendor/
