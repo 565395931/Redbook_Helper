@@ -8,10 +8,17 @@ Double-click `start.bat`, or run:
 
 ```powershell
 cd D:\Redbook_helper\redbook_analisyze
-uv run --python 3.11 uvicorn app.main:app --reload --host 127.0.0.1 --port 8765
+uv run --python 3.11 uvicorn app.main:app --host 127.0.0.1 --port 8765
 ```
 
 Open http://127.0.0.1:8765.
+
+If `uv` reports that `.venv\Scripts\python.exe` cannot be spawned, rebuild the local virtual environment once:
+
+```powershell
+Rename-Item .venv .venv.broken
+uv run --python 3.11 python --version
+```
 
 ## GitHub References
 

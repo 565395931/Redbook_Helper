@@ -95,10 +95,47 @@ def mark_account_expired(account_id: int) -> None:
         )
 
 
-def save_crawled_notes(notes: list[dict], account_id: int, competitor_id: int | None = None, source: str = "crawl") -> int:
-    saved_count = 0
+def _note_identity(note: dict) -> tuple[str | None, str | None]:
+    note_id = str(note.get("note_id") or "").strip() or None
+    note_url = str(note.get("note_url") or "").strip() or None
+    return note_id, note_url
+
+
+def _note_exists(conn, account_id: int, note_id: str | None, note_url: str | None) -> bool:
+    if note_id:
+        row = conn.execute(
+            "SELECT id FROM notes WHERE account_id = ? AND platform_note_id = ? LIMIT 1",
+            (account_id, note_id),
+        ).fetchone()
+        if row:
+            return True
+    if note_url:
+        row = conn.execute(
+            "SELECT id FROM notes WHERE account_id = ? AND note_url = ? LIMIT 1",
+            (account_id, note_url),
+        ).fetchone()
+        if row:
+            return True
+    return False
+
+
+def save_crawled_notes(
+    notes: list[dict],
+    account_id: int,
+    competitor_id: int | None = None,
+    source: str = "crawl",
+) -> dict[str, int]:
+    stats = {"received": len(notes), "saved": 0, "skipped": 0}
     with connect() as conn:
         for note in notes:
+            note_id, note_url = _note_identity(note)
+            if not note_id and not note_url:
+                stats["skipped"] += 1
+                continue
+            if _note_exists(conn, account_id, note_id, note_url):
+                stats["skipped"] += 1
+                continue
+
             score, summary = score_note(
                 note.get("title", ""),
                 note.get("desc", ""),
@@ -108,7 +145,7 @@ def save_crawled_notes(notes: list[dict], account_id: int, competitor_id: int | 
             )
             conn.execute(
                 """
-                INSERT OR REPLACE INTO notes(
+                INSERT INTO notes(
                     account_id, competitor_id, source, platform_note_id, note_url, note_type,
                     author_name, title, body, tags_json, image_urls_json, like_count, collect_count,
                     comment_count, share_count, score, summary, raw_json
@@ -118,8 +155,8 @@ def save_crawled_notes(notes: list[dict], account_id: int, competitor_id: int | 
                     account_id,
                     competitor_id,
                     source,
-                    note.get("note_id"),
-                    note.get("note_url"),
+                    note_id,
+                    note_url,
                     note.get("note_type"),
                     note.get("nickname", ""),
                     note.get("title", ""),
@@ -135,8 +172,19 @@ def save_crawled_notes(notes: list[dict], account_id: int, competitor_id: int | 
                     note.get("raw_json", "{}"),
                 ),
             )
-            saved_count += 1
-    return saved_count
+            stats["saved"] += 1
+    return stats
+
+
+def crawl_result_message(stats: dict[str, int]) -> str:
+    saved = int(stats.get("saved", 0))
+    skipped = int(stats.get("skipped", 0))
+    received = int(stats.get("received", 0))
+    if saved:
+        return f"采集完成：新增 {saved} 条，跳过 {skipped} 条已爬过；本轮返回 {received} 条。今日额度增加 {saved}。"
+    if skipped:
+        return f"本轮没有新增：{skipped} 条都已爬过；本轮返回 {received} 条。今日额度不增加。"
+    return "采集已结束，但没有保存到笔记；可能是链接/Cookie可用但接口没有返回可解析内容。今日额度不会增加。"
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -304,13 +352,14 @@ def crawl_competitor(competitor_id: int, limit: int = Form(20)) -> RedirectRespo
     except Exception as exc:
         mark_account_expired(current["id"])
         return redirect_page_with_error("competitors", f"采集失败：{exc}")
-    saved_count = save_crawled_notes(notes, current["id"], competitor_id=competitor_id, source="competitor")
-    add_daily_crawl_usage(current["id"], saved_count)
+    stats = save_crawled_notes(notes, current["id"], competitor_id=competitor_id, source="competitor")
+    add_daily_crawl_usage(current["id"], stats["saved"])
     with connect() as conn:
         conn.execute("UPDATE competitors SET last_crawled_at = CURRENT_TIMESTAMP WHERE id = ?", (competitor_id,))
-    if saved_count == 0:
-        return redirect_page_with_error("competitors", "采集已结束，但没有保存到笔记；可能是链接/Cookie可用但接口没有返回可解析内容。今日额度不会增加。")
-    return redirect_page_with_notice("competitors", f"采集完成：已保存 {saved_count} 条笔记，今日额度已增加 {saved_count}。")
+    message = crawl_result_message(stats)
+    if stats["saved"] == 0 and stats["skipped"] == 0:
+        return redirect_page_with_error("competitors", message)
+    return redirect_page_with_notice("competitors", message)
 
 
 @app.post("/crawl-target")
@@ -328,11 +377,12 @@ def crawl_any_target(target: str = Form(...), limit: int = Form(25)) -> Redirect
     except Exception as exc:
         mark_account_expired(current["id"])
         return redirect_page_with_error("competitors", f"采集失败：{exc}")
-    saved_count = save_crawled_notes(notes, current["id"], source=target_type)
-    add_daily_crawl_usage(current["id"], saved_count)
-    if saved_count == 0:
+    stats = save_crawled_notes(notes, current["id"], source=target_type)
+    add_daily_crawl_usage(current["id"], stats["saved"])
+    message = crawl_result_message(stats)
+    if stats["saved"] == 0 and stats["skipped"] == 0:
         return redirect_page_with_error("competitors", "采集已结束，但没有保存到笔记；可能是关键词无结果、单条链接缺少 xsec_token，或返回内容暂时无法解析。今日额度不会增加。")
-    return redirect_page_with_notice("competitors", f"采集完成：已保存 {saved_count} 条笔记，今日额度已增加 {saved_count}。")
+    return redirect_page_with_notice("competitors", message)
 
 
 @app.post("/published")
