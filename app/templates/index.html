@@ -148,7 +148,7 @@
     <header class="topbar">
       <div>
         <h1>爬虫测试</h1>
-        <p>支持输入目标账号主页、单条笔记链接或关键词。今日最多采集 {{ daily_crawl_limit }} 条。</p>
+        <p>这里用于临时测试：输入单条笔记链接，或者直接输入关键词。账号主页请添加到下面的固定竞品账号。</p>
       </div>
       <div class="quota">
         <span>今日额度</span>
@@ -165,12 +165,19 @@
       <div class="alert success-alert">{{ request.query_params.get('crawl_notice') }}</div>
       {% endif %}
       <form method="post" action="/crawl-target" class="crawl-target-form">
-        <input name="target" placeholder="粘贴小红书账号主页 / 单条笔记链接，或直接输入关键词" required>
+        <input name="target" placeholder="粘贴单条笔记链接，或直接输入关键词" required>
+        <select name="keyword_sort" title="关键词排序">
+          <option value="0">综合</option>
+          <option value="1">最新</option>
+          <option value="2">最多点赞</option>
+          <option value="3">最多评论</option>
+          <option value="4">最多收藏</option>
+        </select>
         <input type="number" name="limit" value="{{ daily_crawl_remaining if daily_crawl_remaining < daily_crawl_limit else daily_crawl_limit }}" min="1" max="{{ daily_crawl_limit }}" {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>
         <button type="submit" data-loading-text="采集中..." {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>开始采集</button>
       </form>
       <div class="hint-row">
-        <span>后端已强制封顶：今天最多保存 {{ daily_crawl_limit }} 条；额度按成功保存的笔记数计算。</span>
+        <span>排序只影响关键词搜索；单条笔记链接会直接采集该笔记。账号主页请在下面添加固定竞品。</span>
         {% if daily_crawl_remaining <= 0 %}
         <strong>今日额度已用完</strong>
         {% endif %}
@@ -179,13 +186,14 @@
 
     <section class="panel">
       <div class="panel-head">
-        <h2>固定竞品账号</h2>
+        <h2>固定竞品账号主页</h2>
         <span class="badge">{{ competitors|length }} 个账号</span>
       </div>
+      <p class="muted form-help">竞品账号需要粘贴“小红书主页链接”，例如浏览器地址栏里的 `https://www.xiaohongshu.com/user/profile/...`。备注名只是给你自己看的，可以填昵称；不能只输入小红书名字或小红书号。</p>
       <form method="post" action="/competitors" class="inline-form">
-        <input name="name" placeholder="备注名，可空">
-        <input name="profile_url" placeholder="竞品主页链接" required>
-        <button type="submit">添加竞品</button>
+        <input name="name" placeholder="备注名，例如：某某妈妈，可空">
+        <input name="profile_url" placeholder="粘贴竞品主页链接，不是昵称或小红书号" required>
+        <button type="submit">添加竞品主页</button>
       </form>
       <div class="list">
         {% for competitor in competitors %}
@@ -195,12 +203,16 @@
             <small>{{ competitor.profile_url }}</small>
           </div>
           <form method="post" action="/crawl/{{ competitor.id }}" class="crawl-form">
+            <select name="sort_mode" title="主页排序">
+              <option value="latest">最新发布</option>
+              <option value="likes">点赞最多</option>
+            </select>
             <input type="number" name="limit" value="{{ daily_crawl_remaining if daily_crawl_remaining < daily_crawl_limit else daily_crawl_limit }}" min="1" max="{{ daily_crawl_limit }}" {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>
             <button type="submit" data-loading-text="采集中..." {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>采集</button>
           </form>
         </div>
         {% else %}
-        <p class="muted">还没有固定竞品账号。你也可以直接用上面的统一输入框测试。</p>
+        <p class="muted">还没有固定竞品账号。打开竞品主页后，复制浏览器地址栏里的完整链接粘贴到这里。</p>
         {% endfor %}
       </div>
     </section>
@@ -239,7 +251,7 @@
               <span class="badge">{{ note.note_type or '笔记' }}</span>
             </div>
             {% if note.body %}
-            <p class="note-body">{{ note.body }}</p>
+            <p class="note-body">{{ note.body | render_topics }}</p>
             {% else %}
             <p class="note-body muted">本次返回未包含正文；已先保存标题、图片和互动数据。</p>
             {% endif %}

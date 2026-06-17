@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 from urllib.parse import quote
@@ -8,6 +9,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from markupsafe import Markup, escape
 
 from app.db import as_json, connect, from_json, migrate
 from app.services.crawler import crawl_target, crawl_user_notes, fetch_self_published
@@ -20,6 +22,24 @@ DAILY_CRAWL_LIMIT = 25
 app = FastAPI(title="Redbook Analisyze")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
+
+
+def render_topics(value: str | None) -> Markup:
+    text = str(value or "")
+    pieces: list[str] = []
+    last_end = 0
+    pattern = re.compile(r"#([^#\r\n]+?)\[话题\]#")
+    for match in pattern.finditer(text):
+        pieces.append(str(escape(text[last_end : match.start()])))
+        topic = str(escape(match.group(1).strip()))
+        pieces.append(f'<span class="topic-tag">{topic}</span>')
+        last_end = match.end()
+    pieces.append(str(escape(text[last_end:])))
+    html = "".join(pieces).replace("#", "").replace("[话题]", "")
+    return Markup(html)
+
+
+templates.env.filters["render_topics"] = render_topics
 
 
 @app.on_event("startup")
@@ -332,7 +352,11 @@ def add_competitor(name: str = Form(""), profile_url: str = Form(...)) -> Redire
 
 
 @app.post("/crawl/{competitor_id}")
-def crawl_competitor(competitor_id: int, limit: int = Form(20)) -> RedirectResponse:
+def crawl_competitor(
+    competitor_id: int,
+    limit: int = Form(20),
+    sort_mode: str = Form("latest"),
+) -> RedirectResponse:
     current = get_current_account()
     if not current:
         return redirect_home()
@@ -348,7 +372,12 @@ def crawl_competitor(competitor_id: int, limit: int = Form(20)) -> RedirectRespo
 
     request_limit = max(1, min(limit, DAILY_CRAWL_LIMIT, remaining))
     try:
-        notes = crawl_user_notes(competitor["profile_url"], current["cookie"], limit=request_limit)
+        notes = crawl_user_notes(
+            competitor["profile_url"],
+            current["cookie"],
+            limit=request_limit,
+            sort_mode=sort_mode,
+        )
     except Exception as exc:
         mark_account_expired(current["id"])
         return redirect_page_with_error("competitors", f"采集失败：{exc}")
@@ -363,7 +392,11 @@ def crawl_competitor(competitor_id: int, limit: int = Form(20)) -> RedirectRespo
 
 
 @app.post("/crawl-target")
-def crawl_any_target(target: str = Form(...), limit: int = Form(25)) -> RedirectResponse:
+def crawl_any_target(
+    target: str = Form(...),
+    limit: int = Form(25),
+    keyword_sort: int = Form(0),
+) -> RedirectResponse:
     current = get_current_account()
     if not current:
         return redirect_home()
@@ -373,7 +406,12 @@ def crawl_any_target(target: str = Form(...), limit: int = Form(25)) -> Redirect
 
     request_limit = max(1, min(limit, DAILY_CRAWL_LIMIT, remaining))
     try:
-        target_type, notes = crawl_target(target.strip(), current["cookie"], limit=request_limit)
+        target_type, notes = crawl_target(
+            target.strip(),
+            current["cookie"],
+            limit=request_limit,
+            keyword_sort=keyword_sort,
+        )
     except Exception as exc:
         mark_account_expired(current["id"])
         return redirect_page_with_error("competitors", f"采集失败：{exc}")

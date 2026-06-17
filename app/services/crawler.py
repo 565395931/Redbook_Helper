@@ -101,9 +101,9 @@ def _image_urls(note_card: dict[str, Any]) -> list[str]:
 
 def _parse_result_item(item: dict[str, Any], xsec_source: str = "pc_search") -> dict[str, Any] | None:
     note_id = item.get("note_id") or item.get("id")
-    note_card = item.get("note_card") or {}
+    note_card = item.get("note_card") or item
     xsec_token = item.get("xsec_token") or item.get("xsecToken") or note_card.get("xsec_token") or ""
-    if not note_id or not note_card:
+    if not note_id:
         return None
 
     user = note_card.get("user") or {}
@@ -255,7 +255,13 @@ def crawl_note_url(note_url: str, cookie: str) -> list[dict[str, Any]]:
         return [parsed] if parsed else []
 
 
-def crawl_user_notes(profile_url: str, cookie: str, limit: int = 20) -> list[dict[str, Any]]:
+def _item_like_count(item: dict[str, Any]) -> int:
+    note_card = item.get("note_card") or item
+    interact = note_card.get("interact_info") or {}
+    return _count(interact.get("liked_count"))
+
+
+def crawl_user_notes(profile_url: str, cookie: str, limit: int = 20, sort_mode: str = "latest") -> list[dict[str, Any]]:
     with _spider_runtime():
         from apis.xhs_pc_apis import XHS_Apis
 
@@ -263,6 +269,9 @@ def crawl_user_notes(profile_url: str, cookie: str, limit: int = 20) -> list[dic
         success, msg, simple_notes = api.get_user_all_notes(profile_url, cookie)
         if not success:
             raise RuntimeError(str(msg))
+
+        if sort_mode == "likes":
+            simple_notes = sorted(simple_notes, key=_item_like_count, reverse=True)
 
         results: list[dict[str, Any]] = []
         for item in simple_notes[:limit]:
@@ -284,12 +293,12 @@ def crawl_user_notes(profile_url: str, cookie: str, limit: int = 20) -> list[dic
         return results
 
 
-def crawl_keyword_notes(keyword: str, cookie: str, limit: int = 20) -> list[dict[str, Any]]:
+def crawl_keyword_notes(keyword: str, cookie: str, limit: int = 20, sort_type_choice: int = 0) -> list[dict[str, Any]]:
     with _spider_runtime():
         from apis.xhs_pc_apis import XHS_Apis
 
         api = XHS_Apis()
-        success, msg, simple_notes = api.search_some_note(keyword, limit, cookie)
+        success, msg, simple_notes = api.search_some_note(keyword, limit, cookie, sort_type_choice=sort_type_choice)
         if not success:
             raise RuntimeError(str(msg))
 
@@ -331,13 +340,18 @@ def detect_target_type(target: str) -> str:
     return "keyword"
 
 
-def crawl_target(target: str, cookie: str, limit: int = 20) -> tuple[str, list[dict[str, Any]]]:
+def crawl_target(
+    target: str,
+    cookie: str,
+    limit: int = 20,
+    keyword_sort: int = 0,
+) -> tuple[str, list[dict[str, Any]]]:
     target_type = detect_target_type(target)
     if target_type == "note":
         return target_type, crawl_note_url(target, cookie)
     if target_type == "profile":
         return target_type, crawl_user_notes(target, cookie, limit=limit)
-    return target_type, crawl_keyword_notes(target, cookie, limit=limit)
+    return target_type, crawl_keyword_notes(target, cookie, limit=limit, sort_type_choice=keyword_sort)
 
 
 def fetch_self_published(cookie: str) -> list[dict[str, Any]]:

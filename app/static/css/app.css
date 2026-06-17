@@ -253,7 +253,7 @@ p {
 
 .crawl-target-form {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) 96px auto;
+  grid-template-columns: minmax(280px, 1fr) 116px 96px auto;
   align-items: center;
 }
 
@@ -363,6 +363,10 @@ textarea {
   margin: 12px 0 0;
 }
 
+.form-help {
+  margin: -2px 0 14px;
+}
+
 .list,
 .mini-list,
 .drafts {
@@ -387,6 +391,10 @@ textarea {
 
 .crawl-form input {
   width: 86px;
+}
+
+.crawl-form select {
+  width: 112px;
 }
 
 .badge {
@@ -445,6 +453,10 @@ textarea {
   font-weight: 900;
   position: relative;
   padding: 0 0 12px;
+}
+
+.content-table-head span:nth-child(4) {
+  text-align: center;
 }
 
 .content-total {
@@ -578,10 +590,15 @@ textarea {
   display: grid;
   gap: 6px;
   font-size: 13px;
-  justify-items: center;
+  justify-items: start;
   line-height: 1.5;
-  place-content: center;
-  text-align: center;
+  place-content: center start;
+  text-align: left;
+}
+
+.topic-tag {
+  color: #1976d2;
+  font-weight: 800;
 }
 
 .compact-action {

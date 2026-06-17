@@ -20,7 +20,27 @@ function highlightExactSegments(element) {
   element.innerHTML = html;
 }
 
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function renderTopicTags(element) {
+  if (element.querySelector(".topic-tag")) return;
+  const original = element.textContent || "";
+  const html = escapeHtml(original).replace(
+    /#([^#\n\r]+?)\[话题\]#/g,
+    (_, topic) => `<span class="topic-tag">${escapeHtml(topic.trim())}</span>`
+  );
+  element.innerHTML = html.replace(/#/g, "").replace(/\[话题\]/g, "");
+}
+
 document.querySelectorAll(".draft-body").forEach(highlightExactSegments);
+document.querySelectorAll(".note-body").forEach(renderTopicTags);
 
 document.querySelectorAll("form").forEach((form) => {
   form.addEventListener("submit", () => {
