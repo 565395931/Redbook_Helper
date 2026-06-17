@@ -142,7 +142,7 @@ button.danger-button {
 .account-chip {
   border-top: 1px solid var(--line);
   display: grid;
-  gap: 6px;
+  gap: 10px;
   padding-top: 18px;
 }
 
@@ -153,6 +153,58 @@ button.danger-button {
 
 .account-chip strong {
   word-break: break-word;
+}
+
+.sidebar-account-list {
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar-account-list form {
+  margin: 0;
+}
+
+.account-switch-button {
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  line-height: 1.25;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+}
+
+.account-switch-button:hover {
+  background: #f7f8fa;
+}
+
+.account-switch-button small {
+  color: inherit;
+  opacity: 0.78;
+}
+
+.account-switch-button.is-current.is-online {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #fff;
+}
+
+.account-switch-button.is-current.is-offline {
+  background: #ffd866;
+  border-color: #f0bf2a;
+  color: #3b2f04;
+}
+
+.account-switch-button.is-offline:not(.is-current) {
+  background: #fff8dd;
+  border-color: #f2d36f;
+  color: #5f4a05;
 }
 
 .status-ok {
@@ -331,6 +383,48 @@ textarea {
   color: var(--danger);
 }
 
+.compact-alert {
+  margin: 12px 0 0;
+  max-width: 760px;
+}
+
+.sync-inline-form {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.sync-inline-form label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sync-inline-form select {
+  max-width: 240px;
+}
+
+.topbar-sync-form {
+  justify-content: flex-end;
+  margin-top: 0;
+  max-width: 360px;
+}
+
+.topbar-sync-form select {
+  min-width: 180px;
+  max-width: 220px;
+}
+
+.topbar-sync-form button {
+  padding: 9px 14px;
+}
+
+.inline-note {
+  margin: 12px 0 0;
+}
+
 .alert {
   border-radius: 8px;
   font-size: 14px;
@@ -474,12 +568,112 @@ textarea {
 
 .note-score {
   line-height: 1;
+  position: relative;
 }
 
 .note-score strong {
   color: var(--accent);
   font-size: 28px;
   font-weight: 900;
+}
+
+.note-score .hot-score-label {
+  color: #d70018;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.score-popover {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 18px 46px rgba(28, 31, 35, 0.16);
+  color: var(--ink);
+  left: 0;
+  line-height: 1.45;
+  opacity: 0;
+  padding: 14px;
+  pointer-events: none;
+  position: absolute;
+  top: 38px;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease 0.5s, transform 0.16s ease 0.5s, visibility 0.16s ease 0.5s;
+  visibility: hidden;
+  width: 360px;
+  z-index: 20;
+}
+
+.note-score:hover .score-popover {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.score-popover-head,
+.score-popover-foot {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.score-popover-head {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.score-popover-head span,
+.score-popover-foot span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.score-popover-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.score-popover-grid section {
+  background: #fafafa;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.score-popover-grid section div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.score-popover-grid em {
+  color: var(--accent);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.score-popover-grid p {
+  color: #4c535c;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.score-popover-foot {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.score-popover ul {
+  color: #4c535c;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+  padding-left: 18px;
 }
 
 .note-main {
@@ -760,6 +954,13 @@ textarea {
   width: 100%;
 }
 
+.note-actions {
+  align-self: stretch;
+  display: grid;
+  gap: 8px;
+  place-content: center stretch;
+}
+
 .draft-card {
   border-top: 1px solid var(--line);
   padding-top: 14px;
@@ -871,12 +1072,14 @@ mark {
   .source-link,
   .note-media,
   .metrics,
+  .note-actions,
   .compact-action {
     grid-column: 2;
   }
 
   .source-link,
   .metrics,
+  .note-actions,
   .compact-action {
     justify-self: start;
     min-width: 172px;

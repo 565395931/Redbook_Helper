@@ -27,10 +27,25 @@
     </nav>
 
     <section class="account-chip">
-      <span>当前账号</span>
-      {% if current %}
-      <strong>{{ current.name }}</strong>
-      <small class="{% if current.login_status == 'logged_in' %}status-ok{% else %}status-bad{% endif %}">{{ current.login_status or 'logged_in' }}</small>
+      <span>账号列表</span>
+      {% if accounts %}
+      <div class="sidebar-account-list">
+        {% for account in accounts %}
+        <form method="post" action="/accounts/switch">
+          <input type="hidden" name="account_id" value="{{ account.id }}">
+          <input type="hidden" name="page" value="{{ page_name }}">
+          <button
+            type="submit"
+            class="account-switch-button {% if current and account.id == current.id %}is-current{% endif %} {% if account.login_status == 'logged_in' %}is-online{% else %}is-offline{% endif %}"
+          >
+            <strong>{{ account.name }}</strong>
+            {% if current and account.id == current.id %}
+            <small>当前</small>
+            {% endif %}
+          </button>
+        </form>
+        {% endfor %}
+      </div>
       {% else %}
       <strong>未登录</strong>
       <small>请先保存 Cookie 登录态</small>
@@ -64,7 +79,7 @@
           <select name="account_id" onchange="this.form.submit()">
             {% for account in accounts %}
             <option value="{{ account.id }}" {% if account.is_current %}selected{% endif %}>
-              {{ account.name }} · {{ account.login_status or 'logged_in' }}
+              {{ account.name }}
             </option>
             {% endfor %}
           </select>
@@ -223,7 +238,24 @@
       <div>
         <h1>内容看板</h1>
         <p>按评分查看采集到的笔记，选择参考内容生成草稿。</p>
+        {% if request.query_params.get('content_error') %}
+        <div class="alert error-alert compact-alert">{{ request.query_params.get('content_error') }}</div>
+        {% endif %}
+        {% if request.query_params.get('content_notice') %}
+        <div class="alert success-alert compact-alert">{{ request.query_params.get('content_notice') }}</div>
+        {% endif %}
       </div>
+      {% if shareable_accounts %}
+      <form method="post" action="/content/sync" class="sync-inline-form topbar-sync-form">
+        <label for="source_account_ids">共享账号</label>
+        <select id="source_account_ids" name="source_account_ids" multiple size="{{ 4 if shareable_accounts|length > 4 else shareable_accounts|length }}">
+          {% for account in shareable_accounts %}
+          <option value="{{ account.id }}">{{ account.name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="secondary">同步内容数据</button>
+      </form>
+      {% endif %}
     </header>
     <section class="panel">
       <div class="content-table-head">
@@ -240,7 +272,42 @@
         {% for note in notes %}
         <article class="note-card">
           <div class="note-score">
+            {% if note.score >= 90 %}
+            <strong class="hot-score-label">爆款</strong>
+            {% else %}
             <strong>{{ note.score }}</strong>
+            {% endif %}
+            {% if note.ai_score %}
+            <div class="score-popover">
+              <div class="score-popover-head">
+                <b>评分详情</b>
+                <span>爆款信号 {{ note.ai_score.get('爆款信号', note.score) }}</span>
+              </div>
+              <div class="score-popover-grid">
+                {% for label in ['封面', '标题', '正文', '情绪价值', '数据表现'] %}
+                {% set item = note.ai_score.get(label, {}) %}
+                <section>
+                  <div>
+                    <strong>{{ label }}</strong>
+                    <em>{{ item.get('score', '-') }}</em>
+                  </div>
+                  <p>{{ item.get('reason', '暂无说明') }}</p>
+                </section>
+                {% endfor %}
+              </div>
+              <div class="score-popover-foot">
+                <span>总分 {{ note.ai_score.get('总分', '-') }}</span>
+                <span>爆款概率 {{ note.ai_score.get('爆款概率', '-') }}</span>
+              </div>
+              {% if note.ai_score.get('优化建议') %}
+              <ul>
+                {% for suggestion in note.ai_score.get('优化建议', []) %}
+                <li>{{ suggestion }}</li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+            {% endif %}
           </div>
           <div class="note-author">
             {{ note.author_name or '未知作者' }}
@@ -294,9 +361,14 @@
             <span>评 {{ note.comment_count }}</span>
             <span>藏 {{ note.collect_count }}</span>
           </div>
-          <form method="post" action="/notes/{{ note.id }}/hide" class="compact-action">
-            <button type="submit" class="secondary">隐藏此条</button>
-          </form>
+          <div class="note-actions">
+            <form method="post" action="/notes/{{ note.id }}/score" class="compact-action">
+              <button type="submit" data-loading-text="正在打分...">打分</button>
+            </form>
+            <form method="post" action="/notes/{{ note.id }}/hide" class="compact-action">
+              <button type="submit" class="secondary">隐藏此条</button>
+            </form>
+          </div>
         </article>
         {% else %}
         <p class="muted">先在爬虫测试里采集笔记。</p>

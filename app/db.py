@@ -72,6 +72,7 @@ def migrate() -> None:
                 share_count INTEGER NOT NULL DEFAULT 0,
                 score INTEGER NOT NULL DEFAULT 0,
                 summary TEXT,
+                ai_score_json TEXT NOT NULL DEFAULT '{}',
                 raw_json TEXT,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 is_hidden INTEGER NOT NULL DEFAULT 0,
@@ -151,11 +152,20 @@ def migrate() -> None:
             "ALTER TABLE accounts ADD COLUMN login_status TEXT NOT NULL DEFAULT 'logged_in'",
             "ALTER TABLE notes ADD COLUMN author_name TEXT",
             "ALTER TABLE notes ADD COLUMN is_hidden INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE notes ADD COLUMN ai_score_json TEXT NOT NULL DEFAULT '{}'",
         ]:
             try:
                 conn.execute(statement)
             except sqlite3.OperationalError:
                 pass
+        conn.execute(
+            """
+            UPDATE notes
+            SET score = 0,
+                summary = COALESCE(NULLIF(summary, ''), '未打分')
+            WHERE COALESCE(ai_score_json, '{}') = '{}'
+            """
+        )
 
 
 def as_json(value: Any) -> str:

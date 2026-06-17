@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import re
 import shutil
@@ -15,9 +15,9 @@ from markupsafe import Markup, escape
 import requests
 
 from app.db import as_json, connect, from_json, migrate
+from app.services.ai_scoring import score_note_with_model
 from app.services.crawler import crawl_target, crawl_user_notes, fetch_self_published
 from app.services.dedupe import exact_duplicate_segments
-from app.services.scoring import score_note
 
 BASE_DIR = Path(__file__).resolve().parent
 MEDIA_DIR = BASE_DIR / "data" / "media"
@@ -34,14 +34,14 @@ def render_topics(value: str | None) -> Markup:
     text = str(value or "")
     pieces: list[str] = []
     last_end = 0
-    pattern = re.compile(r"#([^#\r\n]+?)\[话题\]#")
+    pattern = re.compile(r"#([^#\r\n]+?)\[璇濋\]#")
     for match in pattern.finditer(text):
         pieces.append(str(escape(text[last_end : match.start()])))
         topic = str(escape(match.group(1).strip()))
         pieces.append(f'<span class="topic-tag">{topic}</span>')
         last_end = match.end()
     pieces.append(str(escape(text[last_end:])))
-    html = "".join(pieces).replace("#", "").replace("[话题]", "")
+    html = "".join(pieces).replace("#", "").replace("[璇濋]", "")
     return Markup(html)
 
 
@@ -61,12 +61,12 @@ def redirect_page(page: str) -> RedirectResponse:
     return RedirectResponse(f"/?page={page}", status_code=303)
 
 
-def redirect_page_with_error(page: str, message: str) -> RedirectResponse:
-    return RedirectResponse(f"/?page={page}&crawl_error={quote(message[:240])}", status_code=303)
+def redirect_page_with_error(page: str, message: str, query_key: str = "crawl_error") -> RedirectResponse:
+    return RedirectResponse(f"/?page={page}&{query_key}={quote(message[:240])}", status_code=303)
 
 
-def redirect_page_with_notice(page: str, message: str) -> RedirectResponse:
-    return RedirectResponse(f"/?page={page}&crawl_notice={quote(message[:240])}", status_code=303)
+def redirect_page_with_notice(page: str, message: str, query_key: str = "crawl_notice") -> RedirectResponse:
+    return RedirectResponse(f"/?page={page}&{query_key}={quote(message[:240])}", status_code=303)
 
 
 def get_current_account() -> dict | None:
@@ -196,6 +196,38 @@ def save_note_images(conn, account_id: int, note_db_id: int, image_urls: list[st
         )
 
 
+def clone_note_images(conn, source_note_id: int, target_account_id: int, target_note_id: int) -> int:
+    rows = conn.execute(
+        """
+        SELECT image_index, remote_url, local_path
+        FROM note_images
+        WHERE note_id = ?
+        ORDER BY image_index
+        """,
+        (source_note_id,),
+    ).fetchall()
+    copied = 0
+    media_root = MEDIA_DIR.resolve()
+    for row in rows:
+        source_path = (MEDIA_DIR / row["local_path"]).resolve()
+        if media_root == source_path or media_root not in source_path.parents or not source_path.exists():
+            continue
+        suffix = Path(row["local_path"]).suffix or _safe_image_suffix(row["remote_url"])
+        relative_path = Path("note_images") / str(target_account_id) / str(target_note_id) / f"{row['image_index']}{suffix}"
+        absolute_path = MEDIA_DIR / relative_path
+        absolute_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_path, absolute_path)
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO note_images(note_id, account_id, image_index, remote_url, local_path)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (target_note_id, target_account_id, row["image_index"], row["remote_url"], relative_path.as_posix()),
+        )
+        copied += 1
+    return copied
+
+
 def media_url(local_path: str) -> str:
     return "/media/" + local_path.replace("\\", "/").lstrip("/")
 
@@ -208,7 +240,7 @@ def normalize_image_urls(value: object) -> list[str]:
 
 def is_video_note(note: dict) -> bool:
     note_type = str(note.get("note_type") or "").strip().lower()
-    return note_type in {"video", "视频"}
+    return note_type in {"video", "瑙嗛"}
 
 
 def attach_note_images(conn, notes: list[dict]) -> None:
@@ -236,6 +268,23 @@ def attach_note_images(conn, notes: list[dict]) -> None:
         note["images"] = images_by_note.get(note["id"]) or [
             {"url": url, "remote_url": url} for url in remote_urls
         ]
+
+
+def first_cover_url(conn, note: dict) -> str | None:
+    row = conn.execute(
+        """
+        SELECT remote_url
+        FROM note_images
+        WHERE note_id = ?
+        ORDER BY image_index
+        LIMIT 1
+        """,
+        (note["id"],),
+    ).fetchone()
+    if row and row["remote_url"]:
+        return row["remote_url"]
+    image_urls = normalize_image_urls(from_json(note.get("image_urls_json"), []))
+    return image_urls[0] if image_urls else None
 
 
 def delete_note_images(conn, account_id: int, note_id: int) -> None:
@@ -277,21 +326,14 @@ def save_crawled_notes(
                 stats["skipped"] += 1
                 continue
 
-            score, summary = score_note(
-                note.get("title", ""),
-                note.get("desc", ""),
-                int(note.get("liked_count") or 0),
-                int(note.get("collected_count") or 0),
-                int(note.get("comment_count") or 0),
-            )
             image_urls = normalize_image_urls(note.get("image_list", []))
             cursor = conn.execute(
                 """
                 INSERT INTO notes(
                     account_id, competitor_id, source, platform_note_id, note_url, note_type,
                     author_name, title, body, tags_json, image_urls_json, like_count, collect_count,
-                    comment_count, share_count, score, summary, raw_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    comment_count, share_count, score, summary, ai_score_json, raw_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     account_id,
@@ -309,8 +351,8 @@ def save_crawled_notes(
                     int(note.get("collected_count") or 0),
                     int(note.get("comment_count") or 0),
                     int(note.get("share_count") or 0),
-                    score,
-                    summary,
+                    0,
+                    "未打分",
                     note.get("raw_json", "{}"),
                 ),
             )
@@ -319,15 +361,67 @@ def save_crawled_notes(
     return stats
 
 
+def sync_notes_from_account(source_account_id: int, target_account_id: int) -> dict[str, int]:
+    stats = {"copied": 0, "skipped": 0, "images_copied": 0}
+    with connect() as conn:
+        notes = conn.execute(
+            """
+            SELECT *
+            FROM notes
+            WHERE account_id = ? AND COALESCE(is_hidden, 0) = 0
+            ORDER BY id
+            """,
+            (source_account_id,),
+        ).fetchall()
+        for note in notes:
+            note_id, note_url = _note_identity(note)
+            if _note_exists(conn, target_account_id, note_id, note_url):
+                stats["skipped"] += 1
+                continue
+            cursor = conn.execute(
+                """
+                INSERT INTO notes(
+                    account_id, competitor_id, source, platform_note_id, note_url, note_type,
+                    author_name, title, body, tags_json, image_urls_json, like_count, collect_count,
+                    comment_count, share_count, score, summary, raw_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    target_account_id,
+                    None,
+                    note["source"],
+                    note["platform_note_id"],
+                    note["note_url"],
+                    note["note_type"],
+                    note["author_name"],
+                    note["title"],
+                    note["body"],
+                    note["tags_json"],
+                    note["image_urls_json"],
+                    int(note["like_count"] or 0),
+                    int(note["collect_count"] or 0),
+                    int(note["comment_count"] or 0),
+                    int(note["share_count"] or 0),
+                    int(note["score"] or 0),
+                    note["summary"],
+                    note.get("ai_score_json") or "{}",
+                    note["raw_json"],
+                ),
+            )
+            stats["images_copied"] += clone_note_images(conn, note["id"], target_account_id, cursor.lastrowid)
+            stats["copied"] += 1
+    return stats
+
+
 def crawl_result_message(stats: dict[str, int]) -> str:
     saved = int(stats.get("saved", 0))
     skipped = int(stats.get("skipped", 0))
     received = int(stats.get("received", 0))
     if saved:
-        return f"采集完成：新增 {saved} 条，跳过 {skipped} 条已爬过；本轮返回 {received} 条。今日额度增加 {saved}。"
+        return f"采集完成：新增 {saved} 条，跳过 {skipped} 条重复内容，本轮返回 {received} 条。今日额度增加 {saved}。"
     if skipped:
-        return f"本轮没有新增：{skipped} 条都已爬过；本轮返回 {received} 条。今日额度不增加。"
-    return "采集已结束，但没有保存到笔记；可能是链接/Cookie可用但接口没有返回可解析内容。今日额度不会增加。"
+        return f"本轮没有新增内容，{skipped} 条都已存在，本轮返回 {received} 条。今日额度不会增加。"
+    return "采集已结束，但没有保存到笔记。可能是链接或 Cookie 可用，但接口没有返回可解析内容。今日额度不会增加。"
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -347,10 +441,20 @@ def home(request: Request, page: str = "accounts") -> HTMLResponse:
         published = []
         brand_profile = None
         image_refs = []
+        shareable_accounts = []
         if current:
             brand_profile = conn.execute(
                 "SELECT * FROM brand_profiles WHERE account_id = ? LIMIT 1", (current["id"],)
             ).fetchone()
+            shareable_accounts = conn.execute(
+                """
+                SELECT id, name, login_status
+                FROM accounts
+                WHERE id != ?
+                ORDER BY id DESC
+                """,
+                (current["id"],),
+            ).fetchall()
             competitors = conn.execute(
                 "SELECT * FROM competitors WHERE account_id = ? ORDER BY id DESC", (current["id"],)
             ).fetchall()
@@ -368,6 +472,8 @@ def home(request: Request, page: str = "accounts") -> HTMLResponse:
                 "SELECT * FROM image_references WHERE account_id = ? ORDER BY id DESC LIMIT 20", (current["id"],)
             ).fetchall()
             attach_note_images(conn, notes)
+            for note in notes:
+                note["ai_score"] = from_json(note.get("ai_score_json"), {})
 
     for draft in drafts:
         draft["duplicate_segments"] = from_json(draft["duplicate_segments_json"], [])
@@ -385,6 +491,7 @@ def home(request: Request, page: str = "accounts") -> HTMLResponse:
             "published": published,
             "brand_profile": brand_profile,
             "image_refs": image_refs,
+            "shareable_accounts": shareable_accounts,
             "daily_crawl_limit": DAILY_CRAWL_LIMIT,
             "daily_crawl_used": daily_crawl_used,
             "daily_crawl_remaining": daily_crawl_remaining,
@@ -407,9 +514,11 @@ def create_account(name: str = Form(...), phone: str = Form(""), cookie: str = F
 
 
 @app.post("/accounts/switch")
-def switch_account(account_id: int = Form(...)) -> RedirectResponse:
+def switch_account(account_id: int = Form(...), page: str = Form("accounts")) -> RedirectResponse:
     with connect() as conn:
         conn.execute("UPDATE accounts SET is_current = CASE WHEN id = ? THEN 1 ELSE 0 END", (account_id,))
+    if page in {"accounts", "brand", "competitors", "content", "images", "review"}:
+        return redirect_page(page)
     return redirect_home()
 
 
@@ -466,12 +575,19 @@ def add_competitor(name: str = Form(""), profile_url: str = Form(...)) -> Redire
     current = get_current_account()
     if not current:
         return redirect_home()
+    clean_profile_url = profile_url.strip()
     with connect() as conn:
+        existing = conn.execute(
+            "SELECT id FROM competitors WHERE account_id = ? AND profile_url = ? LIMIT 1",
+            (current["id"], clean_profile_url),
+        ).fetchone()
+        if existing:
+            return redirect_page_with_notice("competitors", "该竞品主页已经添加过了。")
         conn.execute(
             "INSERT INTO competitors(account_id, name, profile_url) VALUES (?, ?, ?)",
-            (current["id"], name.strip(), profile_url.strip()),
+            (current["id"], name.strip(), clean_profile_url),
         )
-    return redirect_home()
+    return redirect_page_with_notice("competitors", "竞品主页添加成功。")
 
 
 @app.post("/crawl/{competitor_id}")
@@ -544,6 +660,53 @@ def crawl_any_target(
     if stats["saved"] == 0 and stats["skipped"] == 0:
         return redirect_page_with_error("competitors", "采集已结束，但没有保存到笔记；可能是关键词无结果、单条链接缺少 xsec_token，或返回内容暂时无法解析。今日额度不会增加。")
     return redirect_page_with_notice("competitors", message)
+
+
+@app.post("/content/sync")
+def sync_content(source_account_ids: list[int] = Form(...)) -> RedirectResponse:
+    current = get_current_account()
+    if not current:
+        return redirect_home()
+
+    selected_ids = [account_id for account_id in dict.fromkeys(source_account_ids) if account_id != current["id"]]
+    if not selected_ids:
+        return redirect_page_with_error("content", "请选择其他账号作为共享来源。", query_key="content_error")
+
+    copied = 0
+    skipped = 0
+    synced_names: list[str] = []
+    with connect() as conn:
+        source_accounts = conn.execute(
+            f"""
+            SELECT id, name
+            FROM accounts
+            WHERE id IN ({",".join("?" for _ in selected_ids)})
+            ORDER BY id DESC
+            """,
+            selected_ids,
+        ).fetchall()
+
+    if not source_accounts:
+        return redirect_page_with_error("content", "没有找到要同步的账号。", query_key="content_error")
+
+    for source_account in source_accounts:
+        stats = sync_notes_from_account(source_account["id"], current["id"])
+        copied += stats["copied"]
+        skipped += stats["skipped"]
+        synced_names.append(source_account["name"])
+
+    names = "、".join(synced_names)
+    if copied == 0:
+        return redirect_page_with_notice(
+            "content",
+            f"已检查 {names}，当前没有新的内容可同步，跳过 {skipped} 条已有数据。",
+            query_key="content_notice",
+        )
+    return redirect_page_with_notice(
+        "content",
+        f"已从 {names} 同步 {copied} 条内容，跳过 {skipped} 条重复数据。",
+        query_key="content_notice",
+    )
 
 
 @app.post("/published")
@@ -692,6 +855,36 @@ def approve_draft(draft_id: int) -> RedirectResponse:
                 (current["id"], draft["title"], draft["body"]),
             )
     return redirect_home()
+
+
+@app.post("/notes/{note_id}/score")
+def score_note_ai(note_id: int) -> RedirectResponse:
+    current = get_current_account()
+    if not current:
+        return redirect_home()
+    with connect() as conn:
+        note = conn.execute("SELECT * FROM notes WHERE id = ? AND account_id = ?", (note_id, current["id"])).fetchone()
+        if not note:
+            return redirect_page("content")
+        cover_url = first_cover_url(conn, note)
+
+    try:
+        result = score_note_with_model(note, cover_url)
+    except Exception as exc:
+        return redirect_page_with_error("content", f"打分失败：{exc}", query_key="content_error")
+
+    score = max(0, min(100, int(result["爆款信号"])))
+    summary = f"爆款概率：{result.get('爆款概率', '未知')}；爆款信号：{score}"
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE notes
+            SET score = ?, summary = ?, ai_score_json = ?
+            WHERE id = ? AND account_id = ?
+            """,
+            (score, summary, as_json(result), note_id, current["id"]),
+        )
+    return redirect_page_with_notice("content", "打分完成。", query_key="content_notice")
 
 
 @app.post("/notes/{note_id}/hide")

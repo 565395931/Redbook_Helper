@@ -7,3 +7,4 @@ app/data/media/
 .env
 work/
 vendor/
+run-*.log
