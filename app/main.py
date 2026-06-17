@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import re
+import shutil
 from datetime import date
 from pathlib import Path
 from urllib.parse import quote
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
+import requests
 
 from app.db import as_json, connect, from_json, migrate
 from app.services.crawler import crawl_target, crawl_user_notes, fetch_self_published
@@ -17,10 +20,13 @@ from app.services.dedupe import exact_duplicate_segments
 from app.services.scoring import score_note
 
 BASE_DIR = Path(__file__).resolve().parent
+MEDIA_DIR = BASE_DIR / "data" / "media"
 DAILY_CRAWL_LIMIT = 25
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="Redbook Analisyze")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 
@@ -139,6 +145,118 @@ def _note_exists(conn, account_id: int, note_id: str | None, note_url: str | Non
     return False
 
 
+def _safe_image_suffix(url: str, content_type: str = "") -> str:
+    suffix = Path(urlparse(url).path).suffix.lower()
+    if suffix in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+        return suffix
+    if "png" in content_type:
+        return ".png"
+    if "webp" in content_type:
+        return ".webp"
+    if "gif" in content_type:
+        return ".gif"
+    return ".jpg"
+
+
+def _download_note_image(account_id: int, note_id: int, index: int, remote_url: str) -> str | None:
+    if not remote_url:
+        return None
+    try:
+        response = requests.get(
+            remote_url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Referer": "https://www.xiaohongshu.com/",
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+    except requests.RequestException:
+        return None
+
+    suffix = _safe_image_suffix(remote_url, response.headers.get("content-type", ""))
+    relative_path = Path("note_images") / str(account_id) / str(note_id) / f"{index}{suffix}"
+    absolute_path = MEDIA_DIR / relative_path
+    absolute_path.parent.mkdir(parents=True, exist_ok=True)
+    absolute_path.write_bytes(response.content)
+    return relative_path.as_posix()
+
+
+def save_note_images(conn, account_id: int, note_db_id: int, image_urls: list[str]) -> None:
+    for index, remote_url in enumerate(dict.fromkeys(url for url in image_urls if url)):
+        local_path = _download_note_image(account_id, note_db_id, index, remote_url)
+        if not local_path:
+            continue
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO note_images(note_id, account_id, image_index, remote_url, local_path)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (note_db_id, account_id, index, remote_url, local_path),
+        )
+
+
+def media_url(local_path: str) -> str:
+    return "/media/" + local_path.replace("\\", "/").lstrip("/")
+
+
+def normalize_image_urls(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(url).strip() for url in value if str(url).strip()]
+
+
+def is_video_note(note: dict) -> bool:
+    note_type = str(note.get("note_type") or "").strip().lower()
+    return note_type in {"video", "视频"}
+
+
+def attach_note_images(conn, notes: list[dict]) -> None:
+    if not notes:
+        return
+    note_ids = [note["id"] for note in notes]
+    placeholders = ",".join("?" for _ in note_ids)
+    rows = conn.execute(
+        f"""
+        SELECT note_id, remote_url, local_path
+        FROM note_images
+        WHERE note_id IN ({placeholders})
+        ORDER BY note_id, image_index
+        """,
+        note_ids,
+    ).fetchall()
+    images_by_note: dict[int, list[dict[str, str]]] = {}
+    for row in rows:
+        images_by_note.setdefault(row["note_id"], []).append(
+            {"url": media_url(row["local_path"]), "remote_url": row["remote_url"]}
+        )
+    for note in notes:
+        remote_urls = normalize_image_urls(from_json(note["image_urls_json"], []))
+        note["image_urls"] = remote_urls
+        note["images"] = images_by_note.get(note["id"]) or [
+            {"url": url, "remote_url": url} for url in remote_urls
+        ]
+
+
+def delete_note_images(conn, account_id: int, note_id: int) -> None:
+    rows = conn.execute(
+        "SELECT local_path FROM note_images WHERE note_id = ? AND account_id = ?",
+        (note_id, account_id),
+    ).fetchall()
+    for row in rows:
+        image_path = (MEDIA_DIR / row["local_path"]).resolve()
+        media_root = MEDIA_DIR.resolve()
+        if media_root == image_path or media_root not in image_path.parents:
+            continue
+        try:
+            image_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+    note_dir = MEDIA_DIR / "note_images" / str(account_id) / str(note_id)
+    shutil.rmtree(note_dir, ignore_errors=True)
+    conn.execute("DELETE FROM note_images WHERE note_id = ? AND account_id = ?", (note_id, account_id))
+
+
 def save_crawled_notes(
     notes: list[dict],
     account_id: int,
@@ -148,6 +266,9 @@ def save_crawled_notes(
     stats = {"received": len(notes), "saved": 0, "skipped": 0}
     with connect() as conn:
         for note in notes:
+            if is_video_note(note):
+                stats["skipped"] += 1
+                continue
             note_id, note_url = _note_identity(note)
             if not note_id and not note_url:
                 stats["skipped"] += 1
@@ -163,7 +284,8 @@ def save_crawled_notes(
                 int(note.get("collected_count") or 0),
                 int(note.get("comment_count") or 0),
             )
-            conn.execute(
+            image_urls = normalize_image_urls(note.get("image_list", []))
+            cursor = conn.execute(
                 """
                 INSERT INTO notes(
                     account_id, competitor_id, source, platform_note_id, note_url, note_type,
@@ -182,7 +304,7 @@ def save_crawled_notes(
                     note.get("title", ""),
                     note.get("desc", ""),
                     as_json(note.get("tags", [])),
-                    as_json(note.get("image_list", [])),
+                    as_json(image_urls),
                     int(note.get("liked_count") or 0),
                     int(note.get("collected_count") or 0),
                     int(note.get("comment_count") or 0),
@@ -192,6 +314,7 @@ def save_crawled_notes(
                     note.get("raw_json", "{}"),
                 ),
             )
+            save_note_images(conn, account_id, cursor.lastrowid, image_urls)
             stats["saved"] += 1
     return stats
 
@@ -244,11 +367,10 @@ def home(request: Request, page: str = "accounts") -> HTMLResponse:
             image_refs = conn.execute(
                 "SELECT * FROM image_references WHERE account_id = ? ORDER BY id DESC LIMIT 20", (current["id"],)
             ).fetchall()
+            attach_note_images(conn, notes)
 
     for draft in drafts:
         draft["duplicate_segments"] = from_json(draft["duplicate_segments_json"], [])
-    for note in notes:
-        note["image_urls"] = from_json(note["image_urls_json"], [])
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -331,6 +453,7 @@ def delete_account(account_id: int = Form(...)) -> RedirectResponse:
     with connect() as conn:
         was_current = conn.execute("SELECT is_current FROM accounts WHERE id = ?", (account_id,)).fetchone()
         conn.execute("DELETE FROM accounts WHERE id = ?", (account_id,))
+        shutil.rmtree(MEDIA_DIR / "note_images" / str(account_id), ignore_errors=True)
         if was_current and was_current["is_current"]:
             next_account = conn.execute("SELECT id FROM accounts ORDER BY id DESC LIMIT 1").fetchone()
             if next_account:
@@ -577,6 +700,7 @@ def hide_note(note_id: int) -> RedirectResponse:
     if not current:
         return redirect_home()
     with connect() as conn:
+        delete_note_images(conn, current["id"], note_id)
         conn.execute(
             """
             UPDATE notes

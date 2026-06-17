@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 app/data/*.db
 app/data/*.db-*
+app/data/media/
 .env
 work/
 vendor/

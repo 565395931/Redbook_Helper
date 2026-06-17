@@ -265,7 +265,20 @@
             {% endif %}
           </div>
           <div class="note-media">
-            {% if note.image_urls %}
+            {% if note.images %}
+            <div class="image-carousel" data-index="0">
+              {% for image in note.images %}
+              <a class="carousel-slide{% if loop.first %} is-active{% endif %}" href="{{ image.remote_url }}" target="_blank" rel="noopener noreferrer" data-preview-url="{{ image.url }}" data-preview-index="{{ loop.index0 }}">
+                <img src="{{ image.url }}" alt="{{ note.title or '笔记配图' }}" loading="lazy" referrerpolicy="no-referrer">
+              </a>
+              {% endfor %}
+              {% if note.images|length > 1 %}
+              <button type="button" class="carousel-btn carousel-prev" data-direction="-1" aria-label="上一张">‹</button>
+              <button type="button" class="carousel-btn carousel-next" data-direction="1" aria-label="下一张">›</button>
+              <span class="carousel-counter"><b>1</b> / {{ note.images|length }}</span>
+              {% endif %}
+            </div>
+            {% elif note.image_urls %}
             <a href="{{ note.image_urls[0] }}" target="_blank" rel="noopener noreferrer">
               <img src="{{ note.image_urls[0] }}" alt="{{ note.title or '笔记配图' }}" loading="lazy" referrerpolicy="no-referrer">
             </a>
@@ -377,6 +390,15 @@
     </section>
     {% endif %}
   </main>
+  <div class="image-viewer" id="imageViewer" aria-hidden="true">
+    <button type="button" class="viewer-close" aria-label="关闭大图">×</button>
+    <button type="button" class="viewer-nav viewer-prev" data-direction="-1" aria-label="上一张">‹</button>
+    <figure class="viewer-frame">
+      <img src="" alt="大图预览">
+      <figcaption><b>1</b> / <span>1</span></figcaption>
+    </figure>
+    <button type="button" class="viewer-nav viewer-next" data-direction="1" aria-label="下一张">›</button>
+  </div>
   <script src="/static/js/app.js"></script>
 </body>
 </html>

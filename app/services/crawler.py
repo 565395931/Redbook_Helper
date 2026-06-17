@@ -3,12 +3,14 @@ from __future__ import annotations
 import json
 import os
 import sys
+import warnings
 from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 from typing import Any
 
 import requests
+import urllib3
 
 ROOT = Path(__file__).resolve().parents[2]
 SPIDER_ROOT = ROOT / "vendor" / "Spider_XHS"
@@ -26,7 +28,9 @@ def _spider_runtime():
     previous_cwd = Path.cwd()
     os.chdir(SPIDER_ROOT)
     try:
-        yield
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=urllib3.exceptions.InsecureRequestWarning)
+            yield
     finally:
         os.chdir(previous_cwd)
 
@@ -298,7 +302,13 @@ def crawl_keyword_notes(keyword: str, cookie: str, limit: int = 20, sort_type_ch
         from apis.xhs_pc_apis import XHS_Apis
 
         api = XHS_Apis()
-        success, msg, simple_notes = api.search_some_note(keyword, limit, cookie, sort_type_choice=sort_type_choice)
+        success, msg, simple_notes = api.search_some_note(
+            keyword,
+            limit,
+            cookie,
+            sort_type_choice=sort_type_choice,
+            note_type=2,
+        )
         if not success:
             raise RuntimeError(str(msg))
 
