@@ -5,6 +5,7 @@ app/data/*.db
 app/data/*.db-*
 app/data/media/
 .env
+.codegraph/
 work/
 vendor/
 run-*.log

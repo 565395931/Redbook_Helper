@@ -128,11 +128,24 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.querySelectorAll("form").forEach((form) => {
-  form.addEventListener("submit", () => {
+  form.addEventListener("submit", (event) => {
+    const confirmation = form.dataset.confirm;
+    if (confirmation && !window.confirm(confirmation)) {
+      event.preventDefault();
+      return;
+    }
+
     const button = form.querySelector("button[type='submit'][data-loading-text]");
     if (!button) return;
     button.dataset.originalText = button.textContent || "";
-    button.textContent = button.dataset.loadingText || "Working...";
+    button.textContent = button.dataset.loadingText || "处理中…";
     button.disabled = true;
+    form.setAttribute("aria-busy", "true");
   });
 });
+
+if (document.querySelector("[data-scoring-note]")) {
+  window.setTimeout(() => {
+    window.location.reload();
+  }, 3000);
+}

@@ -140,7 +140,7 @@ def _parse_result_item(item: dict[str, Any], xsec_source: str = "pc_search") -> 
         "video_addr": None,
         "image_list": _image_urls(note_card),
         "tags": tags,
-        "upload_time": "",
+        "upload_time": _timestamp_text(note_card.get("time") or note_card.get("create_time")),
         "ip_location": "",
         "raw_json": json.dumps(item, ensure_ascii=False),
     }
@@ -158,6 +158,20 @@ def _parse_web_initial_state(html: str) -> dict[str, Any] | None:
         return json.loads(state_text)
     except json.JSONDecodeError:
         return None
+
+
+def _timestamp_text(value: Any) -> str:
+    if value in (None, ""):
+        return ""
+    try:
+        timestamp = float(value)
+    except (TypeError, ValueError):
+        return str(value).strip()
+    if timestamp > 10_000_000_000:
+        timestamp /= 1000
+    from datetime import datetime
+
+    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def fetch_web_note_detail(note_url: str, cookie: str) -> dict[str, Any] | None:
@@ -218,7 +232,7 @@ def fetch_web_note_detail(note_url: str, cookie: str) -> dict[str, Any] | None:
         "video_addr": None,
         "image_list": images,
         "tags": tags,
-        "upload_time": "",
+        "upload_time": _timestamp_text(note.get("time") or note.get("createTime") or note.get("create_time")),
         "ip_location": note.get("ipLocation") or "",
         "raw_json": json.dumps(note, ensure_ascii=False),
     }

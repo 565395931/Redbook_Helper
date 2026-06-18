@@ -73,6 +73,10 @@ def migrate() -> None:
                 score INTEGER NOT NULL DEFAULT 0,
                 summary TEXT,
                 ai_score_json TEXT NOT NULL DEFAULT '{}',
+                scoring_status TEXT NOT NULL DEFAULT 'idle',
+                scoring_error TEXT,
+                scoring_started_at TEXT,
+                published_at TEXT,
                 raw_json TEXT,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 is_hidden INTEGER NOT NULL DEFAULT 0,
@@ -144,6 +148,12 @@ def migrate() -> None:
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY(account_id, usage_date)
             );
+
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
             """
         )
         for statement in [
@@ -153,11 +163,23 @@ def migrate() -> None:
             "ALTER TABLE notes ADD COLUMN author_name TEXT",
             "ALTER TABLE notes ADD COLUMN is_hidden INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE notes ADD COLUMN ai_score_json TEXT NOT NULL DEFAULT '{}'",
+            "ALTER TABLE notes ADD COLUMN scoring_status TEXT NOT NULL DEFAULT 'idle'",
+            "ALTER TABLE notes ADD COLUMN scoring_error TEXT",
+            "ALTER TABLE notes ADD COLUMN scoring_started_at TEXT",
+            "ALTER TABLE notes ADD COLUMN published_at TEXT",
         ]:
             try:
                 conn.execute(statement)
             except sqlite3.OperationalError:
                 pass
+        conn.execute(
+            """
+            UPDATE notes
+            SET scoring_status = 'failed',
+                scoring_error = '打分任务因服务重启而中断，请重新打分。'
+            WHERE scoring_status = 'scoring'
+            """
+        )
         conn.execute(
             """
             UPDATE notes

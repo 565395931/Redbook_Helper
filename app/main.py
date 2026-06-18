@@ -1,13 +1,15 @@
 ﻿from __future__ import annotations
 
+import base64
+import mimetypes
 import re
 import shutil
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, Form, Request
+from fastapi import BackgroundTasks, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -15,7 +17,7 @@ from markupsafe import Markup, escape
 import requests
 
 from app.db import as_json, connect, from_json, migrate
-from app.services.ai_scoring import score_note_with_model
+from app.services.ai_scoring import normalize_score_result, score_note_with_model
 from app.services.crawler import crawl_target, crawl_user_notes, fetch_self_published
 from app.services.dedupe import exact_duplicate_segments
 
@@ -46,6 +48,29 @@ def render_topics(value: str | None) -> Markup:
 
 
 templates.env.filters["render_topics"] = render_topics
+
+TOPIC_PATTERN = re.compile(r"#([^#\r\n\[]+?)(?:\[话题\])?#")
+
+
+def extract_note_keywords(body: str | None, tags: list[str]) -> list[str]:
+    values = [match.group(1).strip() for match in TOPIC_PATTERN.finditer(str(body or ""))]
+    values.extend(str(tag).strip() for tag in tags if str(tag).strip())
+    return list(dict.fromkeys(value for value in values if value))
+
+
+def strip_note_topics(body: str | None) -> str:
+    return re.sub(r"\s{2,}", " ", TOPIC_PATTERN.sub("", str(body or ""))).strip()
+
+
+def publication_age_days(published_at: str | None) -> int | None:
+    if not published_at:
+        return None
+    try:
+        published = datetime.fromisoformat(str(published_at).replace("Z", "+00:00"))
+        now = datetime.now(published.tzinfo) if published.tzinfo else datetime.now()
+        return max(0, (now - published).days)
+    except (TypeError, ValueError):
+        return None
 
 
 @app.on_event("startup")
@@ -78,6 +103,12 @@ def get_current_account() -> dict | None:
         if account:
             conn.execute("UPDATE accounts SET is_current = CASE WHEN id = ? THEN 1 ELSE 0 END", (account["id"],))
         return account
+
+
+def get_app_setting(key: str) -> str:
+    with connect() as conn:
+        row = conn.execute("SELECT value FROM app_settings WHERE key = ?", (key,)).fetchone()
+    return str(row["value"]).strip() if row else ""
 
 
 def today_key() -> str:
@@ -273,7 +304,7 @@ def attach_note_images(conn, notes: list[dict]) -> None:
 def first_cover_url(conn, note: dict) -> str | None:
     row = conn.execute(
         """
-        SELECT remote_url
+        SELECT remote_url, local_path
         FROM note_images
         WHERE note_id = ?
         ORDER BY image_index
@@ -281,6 +312,13 @@ def first_cover_url(conn, note: dict) -> str | None:
         """,
         (note["id"],),
     ).fetchone()
+    if row and row["local_path"]:
+        local_path = (MEDIA_DIR / row["local_path"]).resolve()
+        media_root = MEDIA_DIR.resolve()
+        if media_root in local_path.parents and local_path.is_file():
+            mime_type = mimetypes.guess_type(local_path.name)[0] or "image/jpeg"
+            encoded = base64.b64encode(local_path.read_bytes()).decode("ascii")
+            return f"data:{mime_type};base64,{encoded}"
     if row and row["remote_url"]:
         return row["remote_url"]
     image_urls = normalize_image_urls(from_json(note.get("image_urls_json"), []))
@@ -332,8 +370,8 @@ def save_crawled_notes(
                 INSERT INTO notes(
                     account_id, competitor_id, source, platform_note_id, note_url, note_type,
                     author_name, title, body, tags_json, image_urls_json, like_count, collect_count,
-                    comment_count, share_count, score, summary, ai_score_json, raw_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    comment_count, share_count, score, summary, ai_score_json, published_at, raw_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     account_id,
@@ -353,6 +391,8 @@ def save_crawled_notes(
                     int(note.get("share_count") or 0),
                     0,
                     "未打分",
+                    "{}",
+                    note.get("upload_time") or None,
                     note.get("raw_json", "{}"),
                 ),
             )
@@ -383,8 +423,8 @@ def sync_notes_from_account(source_account_id: int, target_account_id: int) -> d
                 INSERT INTO notes(
                     account_id, competitor_id, source, platform_note_id, note_url, note_type,
                     author_name, title, body, tags_json, image_urls_json, like_count, collect_count,
-                    comment_count, share_count, score, summary, raw_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    comment_count, share_count, score, summary, ai_score_json, published_at, raw_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     target_account_id,
@@ -405,6 +445,7 @@ def sync_notes_from_account(source_account_id: int, target_account_id: int) -> d
                     int(note["score"] or 0),
                     note["summary"],
                     note.get("ai_score_json") or "{}",
+                    note.get("published_at"),
                     note["raw_json"],
                 ),
             )
@@ -427,7 +468,7 @@ def crawl_result_message(stats: dict[str, int]) -> str:
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, page: str = "accounts") -> HTMLResponse:
     current = get_current_account()
-    valid_pages = {"accounts", "brand", "competitors", "content", "images", "review"}
+    valid_pages = {"accounts", "brand", "competitors", "content", "images", "review", "settings"}
     current_page = page if page in valid_pages else "accounts"
     daily_crawl_used = get_daily_crawl_used(current["id"]) if current else 0
     daily_crawl_remaining = max(0, DAILY_CRAWL_LIMIT - daily_crawl_used)
@@ -442,6 +483,12 @@ def home(request: Request, page: str = "accounts") -> HTMLResponse:
         brand_profile = None
         image_refs = []
         shareable_accounts = []
+        saved_settings = {
+            row["key"]: bool(str(row["value"]).strip())
+            for row in conn.execute(
+                "SELECT key, value FROM app_settings WHERE key IN ('kie_api_key', 'deepseek_api_key')"
+            ).fetchall()
+        }
         if current:
             brand_profile = conn.execute(
                 "SELECT * FROM brand_profiles WHERE account_id = ? LIMIT 1", (current["id"],)
@@ -474,6 +521,12 @@ def home(request: Request, page: str = "accounts") -> HTMLResponse:
             attach_note_images(conn, notes)
             for note in notes:
                 note["ai_score"] = from_json(note.get("ai_score_json"), {})
+                if note["ai_score"]:
+                    normalize_score_result(note["ai_score"])
+                tags = from_json(note.get("tags_json"), [])
+                note["keywords"] = extract_note_keywords(note.get("body"), tags)
+                note["display_body"] = strip_note_topics(note.get("body"))
+                note["publication_age_days"] = publication_age_days(note.get("published_at"))
 
     for draft in drafts:
         draft["duplicate_segments"] = from_json(draft["duplicate_segments_json"], [])
@@ -495,8 +548,38 @@ def home(request: Request, page: str = "accounts") -> HTMLResponse:
             "daily_crawl_limit": DAILY_CRAWL_LIMIT,
             "daily_crawl_used": daily_crawl_used,
             "daily_crawl_remaining": daily_crawl_remaining,
+            "saved_settings": saved_settings,
         },
     )
+
+
+@app.post("/settings")
+def save_settings(
+    kie_api_key: str = Form(""),
+    deepseek_api_key: str = Form(""),
+    clear_kie_api_key: str = Form(""),
+    clear_deepseek_api_key: str = Form(""),
+) -> RedirectResponse:
+    updates = {
+        "kie_api_key": (kie_api_key.strip(), bool(clear_kie_api_key)),
+        "deepseek_api_key": (deepseek_api_key.strip(), bool(clear_deepseek_api_key)),
+    }
+    with connect() as conn:
+        for key, (new_value, should_clear) in updates.items():
+            if not new_value and not should_clear:
+                continue
+            value = "" if should_clear else new_value
+            conn.execute(
+                """
+                INSERT INTO app_settings(key, value, updated_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET
+                    value = excluded.value,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (key, value),
+            )
+    return redirect_page_with_notice("settings", "设置已保存。", query_key="settings_notice")
 
 
 @app.post("/accounts")
@@ -517,7 +600,7 @@ def create_account(name: str = Form(...), phone: str = Form(""), cookie: str = F
 def switch_account(account_id: int = Form(...), page: str = Form("accounts")) -> RedirectResponse:
     with connect() as conn:
         conn.execute("UPDATE accounts SET is_current = CASE WHEN id = ? THEN 1 ELSE 0 END", (account_id,))
-    if page in {"accounts", "brand", "competitors", "content", "images", "review"}:
+    if page in {"accounts", "brand", "competitors", "content", "images", "review", "settings"}:
         return redirect_page(page)
     return redirect_home()
 
@@ -620,7 +703,10 @@ def crawl_competitor(
     except Exception as exc:
         mark_account_expired(current["id"])
         return redirect_page_with_error("competitors", f"采集失败：{exc}")
-    stats = save_crawled_notes(notes, current["id"], competitor_id=competitor_id, source="competitor")
+    try:
+        stats = save_crawled_notes(notes, current["id"], competitor_id=competitor_id, source="competitor")
+    except Exception as exc:
+        return redirect_page_with_error("competitors", f"采集结果保存失败：{exc}")
     add_daily_crawl_usage(current["id"], stats["saved"])
     with connect() as conn:
         conn.execute("UPDATE competitors SET last_crawled_at = CURRENT_TIMESTAMP WHERE id = ?", (competitor_id,))
@@ -654,7 +740,10 @@ def crawl_any_target(
     except Exception as exc:
         mark_account_expired(current["id"])
         return redirect_page_with_error("competitors", f"采集失败：{exc}")
-    stats = save_crawled_notes(notes, current["id"], source=target_type)
+    try:
+        stats = save_crawled_notes(notes, current["id"], source=target_type)
+    except Exception as exc:
+        return redirect_page_with_error("competitors", f"采集结果保存失败：{exc}")
     add_daily_crawl_usage(current["id"], stats["saved"])
     message = crawl_result_message(stats)
     if stats["saved"] == 0 and stats["skipped"] == 0:
@@ -857,21 +946,31 @@ def approve_draft(draft_id: int) -> RedirectResponse:
     return redirect_home()
 
 
-@app.post("/notes/{note_id}/score")
-def score_note_ai(note_id: int) -> RedirectResponse:
-    current = get_current_account()
-    if not current:
-        return redirect_home()
+def run_note_scoring(note_id: int, account_id: int) -> None:
     with connect() as conn:
-        note = conn.execute("SELECT * FROM notes WHERE id = ? AND account_id = ?", (note_id, current["id"])).fetchone()
+        note = conn.execute(
+            "SELECT * FROM notes WHERE id = ? AND account_id = ?",
+            (note_id, account_id),
+        ).fetchone()
         if not note:
-            return redirect_page("content")
+            return
         cover_url = first_cover_url(conn, note)
+        note["publication_age_days"] = publication_age_days(note.get("published_at"))
 
     try:
-        result = score_note_with_model(note, cover_url)
+        result = score_note_with_model(note, cover_url, api_token=get_app_setting("kie_api_key"))
     except Exception as exc:
-        return redirect_page_with_error("content", f"打分失败：{exc}", query_key="content_error")
+        with connect() as conn:
+            conn.execute(
+                """
+                UPDATE notes
+                SET scoring_status = 'failed',
+                    scoring_error = ?
+                WHERE id = ? AND account_id = ?
+                """,
+                (str(exc)[:500], note_id, account_id),
+            )
+        return
 
     score = max(0, min(100, int(result["爆款信号"])))
     summary = f"爆款概率：{result.get('爆款概率', '未知')}；爆款信号：{score}"
@@ -879,12 +978,43 @@ def score_note_ai(note_id: int) -> RedirectResponse:
         conn.execute(
             """
             UPDATE notes
-            SET score = ?, summary = ?, ai_score_json = ?
+            SET score = ?,
+                summary = ?,
+                ai_score_json = ?,
+                scoring_status = 'completed',
+                scoring_error = NULL
             WHERE id = ? AND account_id = ?
             """,
-            (score, summary, as_json(result), note_id, current["id"]),
+            (score, summary, as_json(result), note_id, account_id),
         )
-    return redirect_page_with_notice("content", "打分完成。", query_key="content_notice")
+
+
+@app.post("/notes/{note_id}/score")
+def score_note_ai(note_id: int, background_tasks: BackgroundTasks) -> RedirectResponse:
+    current = get_current_account()
+    if not current:
+        return redirect_home()
+    with connect() as conn:
+        note = conn.execute(
+            "SELECT id, scoring_status FROM notes WHERE id = ? AND account_id = ?",
+            (note_id, current["id"]),
+        ).fetchone()
+        if not note:
+            return redirect_page("content")
+        if note.get("scoring_status") == "scoring":
+            return redirect_page_with_notice("content", "这条笔记正在打分。", query_key="content_notice")
+        conn.execute(
+            """
+            UPDATE notes
+            SET scoring_status = 'scoring',
+                scoring_error = NULL,
+                scoring_started_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND account_id = ?
+            """,
+            (note_id, current["id"]),
+        )
+    background_tasks.add_task(run_note_scoring, note_id, current["id"])
+    return redirect_page_with_notice("content", "已开始打分，可继续浏览其他页面。", query_key="content_notice")
 
 
 @app.post("/notes/{note_id}/hide")

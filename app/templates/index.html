@@ -3,31 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>小红书运营分析台</title>
-  <link rel="stylesheet" href="/static/css/app.css">
+  <meta name="theme-color" content="#f7f7f8">
+  <title>红书运营工作台</title>
+  <link rel="stylesheet" href="/static/css/app.css?v=20260618-8">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></symbol>
+    <symbol id="icon-profile" viewBox="0 0 24 24"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></symbol>
+    <symbol id="icon-crawl" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="16" height="14" x="4" y="6" rx="4"/><path d="M9 11h.01"/><path d="M15 11h.01"/><path d="M9 16c1.5 1 4.5 1 6 0"/></symbol>
+    <symbol id="icon-content" viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></symbol>
+    <symbol id="icon-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></symbol>
+    <symbol id="icon-review" viewBox="0 0 24 24"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+  </svg>
   {% set page_name = request.query_params.get('page', 'accounts') %}
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-mark">小红书</span>
+      <span class="brand-mark">R</span>
       <div>
-        <strong>运营分析台</strong>
-        <small>采集 · 分析 · 生成 · 去重</small>
+        <strong>红书工作台</strong>
+        <small>内容运营中心</small>
       </div>
     </div>
 
-    <nav class="nav">
-      <a class="{% if page_name == 'accounts' %}active{% endif %}" href="/?page=accounts">首页 / 登录</a>
-      <a class="{% if page_name == 'brand' %}active{% endif %}" href="/?page=brand">品牌资料</a>
-      <a class="{% if page_name == 'competitors' %}active{% endif %}" href="/?page=competitors">爬虫测试</a>
-      <a class="{% if page_name == 'content' %}active{% endif %}" href="/?page=content">内容看板</a>
-      <a class="{% if page_name == 'images' %}active{% endif %}" href="/?page=images">图片灵感</a>
-      <a class="{% if page_name == 'review' %}active{% endif %}" href="/?page=review">审核去重</a>
+    <nav class="nav" aria-label="主要导航">
+      <a class="{% if page_name == 'accounts' %}active{% endif %}" href="/?page=accounts" {% if page_name == 'accounts' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-home"/></svg><span>首页 / 登录</span></a>
+      <a class="{% if page_name == 'brand' %}active{% endif %}" href="/?page=brand" {% if page_name == 'brand' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-profile"/></svg><span>品牌资料</span></a>
+      <a class="{% if page_name == 'competitors' %}active{% endif %}" href="/?page=competitors" {% if page_name == 'competitors' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-crawl"/></svg><span>采集测试</span></a>
+      <a class="{% if page_name == 'content' %}active{% endif %}" href="/?page=content" {% if page_name == 'content' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-content"/></svg><span>内容看板</span></a>
+      <a class="{% if page_name == 'images' %}active{% endif %}" href="/?page=images" {% if page_name == 'images' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-image"/></svg><span>图片灵感</span></a>
+      <a class="{% if page_name == 'review' %}active{% endif %}" href="/?page=review" {% if page_name == 'review' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-review"/></svg><span>审核去重</span></a>
     </nav>
 
     <section class="account-chip">
-      <span>账号列表</span>
+      <span class="account-section-label">当前账号</span>
       {% if accounts %}
       <div class="sidebar-account-list">
         {% for account in accounts %}
@@ -40,7 +51,7 @@
           >
             <strong>{{ account.name }}</strong>
             {% if current and account.id == current.id %}
-            <small>当前</small>
+            <span class="account-status-dot" aria-label="当前账号"></span>
             {% endif %}
           </button>
         </form>
@@ -51,9 +62,16 @@
       <small>请先保存 Cookie 登录态</small>
       {% endif %}
     </section>
+
+    <div class="sidebar-footer">
+      <a class="settings-link {% if page_name == 'settings' %}active{% endif %}" href="/?page=settings" {% if page_name == 'settings' %}aria-current="page"{% endif %}>
+        <svg class="settings-icon" aria-hidden="true"><use href="#icon-settings"/></svg>
+        <span>设置</span>
+      </a>
+    </div>
   </aside>
 
-  <main class="workspace">
+  <main class="workspace" id="main-content">
     {% if page_name == 'accounts' %}
     <header class="topbar">
       <div>
@@ -76,7 +94,7 @@
         {% if accounts %}
         <form method="post" action="/accounts/switch" class="stack">
           <label>切换账号</label>
-          <select name="account_id" onchange="this.form.submit()">
+          <select name="account_id" aria-label="切换账号" onchange="this.form.submit()">
             {% for account in accounts %}
             <option value="{{ account.id }}" {% if account.is_current %}selected{% endif %}>
               {{ account.name }}
@@ -90,7 +108,7 @@
             <input type="hidden" name="account_id" value="{{ current.id }}">
             <button type="submit" class="secondary">退出当前账号</button>
           </form>
-          <form method="post" action="/accounts/delete">
+          <form method="post" action="/accounts/delete" data-confirm="确认删除当前账号？此操作无法撤销。">
             <input type="hidden" name="account_id" value="{{ current.id }}">
             <button type="submit" class="danger-button">删除账号</button>
           </form>
@@ -104,16 +122,16 @@
         <form method="post" action="/accounts/update-cookie" class="stack">
           <label>更新当前账号 Cookie</label>
           <input type="hidden" name="account_id" value="{{ current.id }}">
-          <textarea name="cookie" rows="6" placeholder="粘贴新的 Cookie，会覆盖 {{ current.name }} 的旧登录态" required></textarea>
+          <textarea name="cookie" rows="6" aria-label="更新当前账号 Cookie" autocomplete="off" spellcheck="false" placeholder="粘贴新的 Cookie，会覆盖 {{ current.name }} 的旧登录态…" required></textarea>
           <button type="submit">更新 Cookie</button>
         </form>
         <div class="divider"></div>
         {% endif %}
         <form method="post" action="/accounts" class="stack">
           <label>新增账号</label>
-          <input name="name" placeholder="账号名称，例如：品牌号 A" required>
-          <input name="phone" placeholder="手机号，可选">
-          <textarea name="cookie" rows="6" placeholder="粘贴 Cookie" required></textarea>
+          <input name="name" aria-label="账号名称" autocomplete="off" placeholder="账号名称，例如：品牌号 A…" required>
+          <input type="tel" name="phone" aria-label="手机号" autocomplete="tel" inputmode="tel" placeholder="手机号，可选…">
+          <textarea name="cookie" rows="6" aria-label="账号 Cookie" autocomplete="off" spellcheck="false" placeholder="粘贴 Cookie…" required></textarea>
           <button type="submit">保存登录态</button>
         </form>
       </div>
@@ -132,11 +150,68 @@
     </section>
     {% endif %}
 
-    {% if page_name != 'accounts' and not current %}
+    {% if page_name not in ['accounts', 'settings'] and not current %}
     <section class="empty">
       <h2>先完成登录</h2>
       <p>保存 Cookie 后才能开始采集和内容测试。</p>
       <a class="button-link" href="/?page=accounts">去登录</a>
+    </section>
+    {% endif %}
+
+    {% if page_name == 'settings' %}
+    <header class="topbar">
+      <div>
+        <h1>设置</h1>
+        <p>管理模型服务密钥。保存后立即生效，输入框不会回显已经保存的密钥。</p>
+      </div>
+    </header>
+    <section class="panel settings-panel">
+      {% if request.query_params.get('settings_notice') %}
+      <div class="alert success-alert" aria-live="polite">{{ request.query_params.get('settings_notice') }}</div>
+      {% endif %}
+      <form method="post" action="/settings" class="settings-form">
+        <div class="setting-field">
+          <div class="setting-label">
+            <div>
+              <label for="kie-api-key">KIE API Key</label>
+              <small>用于内容看板的 AI 打分</small>
+            </div>
+            <span class="config-status {% if saved_settings.get('kie_api_key') %}is-configured{% endif %}">
+              {{ '已配置' if saved_settings.get('kie_api_key') else '未配置' }}
+            </span>
+          </div>
+          <input id="kie-api-key" type="password" name="kie_api_key" autocomplete="new-password" spellcheck="false" placeholder="输入新的 KIE API Key…">
+          {% if saved_settings.get('kie_api_key') %}
+          <label class="clear-setting">
+            <input type="checkbox" name="clear_kie_api_key" value="1">
+            <span>清除已保存的 KIE Key</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <div class="setting-field">
+          <div class="setting-label">
+            <div>
+              <label for="deepseek-api-key">DeepSeek API Key</label>
+              <small>预留给后续 DeepSeek 功能</small>
+            </div>
+            <span class="config-status {% if saved_settings.get('deepseek_api_key') %}is-configured{% endif %}">
+              {{ '已配置' if saved_settings.get('deepseek_api_key') else '未配置' }}
+            </span>
+          </div>
+          <input id="deepseek-api-key" type="password" name="deepseek_api_key" autocomplete="new-password" spellcheck="false" placeholder="输入新的 DeepSeek API Key…">
+          {% if saved_settings.get('deepseek_api_key') %}
+          <label class="clear-setting">
+            <input type="checkbox" name="clear_deepseek_api_key" value="1">
+            <span>清除已保存的 DeepSeek Key</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <div class="settings-actions">
+          <button type="submit">保存设置</button>
+        </div>
+      </form>
     </section>
     {% endif %}
 
@@ -149,11 +224,11 @@
     </header>
     <section class="panel">
       <form method="post" action="/brand-profile" class="brand-form">
-        <input name="main_theme" placeholder="账号主要主题，例如：职场穿搭 / 母婴好物" value="{{ brand_profile.main_theme if brand_profile else '' }}">
-        <input name="audience" placeholder="目标人群，例如：25-35 岁通勤女性" value="{{ brand_profile.audience if brand_profile else '' }}">
-        <input name="tone" placeholder="表达风格，例如：真实、有细节、不硬广" value="{{ brand_profile.tone if brand_profile else '' }}">
-        <textarea name="product_points" rows="4" placeholder="产品 / 服务卖点，可选">{{ brand_profile.product_points if brand_profile else '' }}</textarea>
-        <textarea name="banned_words" rows="3" placeholder="禁用词或不想出现的表达，可选">{{ brand_profile.banned_words if brand_profile else '' }}</textarea>
+        <input name="main_theme" aria-label="账号主要主题" autocomplete="off" placeholder="账号主要主题，例如：职场穿搭 / 母婴好物…" value="{{ brand_profile.main_theme if brand_profile else '' }}">
+        <input name="audience" aria-label="目标人群" autocomplete="off" placeholder="目标人群，例如：25–35 岁通勤女性…" value="{{ brand_profile.audience if brand_profile else '' }}">
+        <input name="tone" aria-label="表达风格" autocomplete="off" placeholder="表达风格，例如：真实、有细节、不硬广…" value="{{ brand_profile.tone if brand_profile else '' }}">
+        <textarea name="product_points" aria-label="产品或服务卖点" autocomplete="off" rows="4" placeholder="产品 / 服务卖点，可选…">{{ brand_profile.product_points if brand_profile else '' }}</textarea>
+        <textarea name="banned_words" aria-label="禁用词" autocomplete="off" rows="3" placeholder="禁用词或不想出现的表达，可选…">{{ brand_profile.banned_words if brand_profile else '' }}</textarea>
         <button type="submit">保存资料</button>
       </form>
     </section>
@@ -174,22 +249,22 @@
 
     <section class="panel hero-panel">
       {% if request.query_params.get('crawl_error') %}
-      <div class="alert error-alert">{{ request.query_params.get('crawl_error') }}</div>
+      <div class="alert error-alert" aria-live="polite">{{ request.query_params.get('crawl_error') }}</div>
       {% endif %}
       {% if request.query_params.get('crawl_notice') %}
-      <div class="alert success-alert">{{ request.query_params.get('crawl_notice') }}</div>
+      <div class="alert success-alert" aria-live="polite">{{ request.query_params.get('crawl_notice') }}</div>
       {% endif %}
       <form method="post" action="/crawl-target" class="crawl-target-form">
-        <input name="target" placeholder="粘贴单条笔记链接，或直接输入关键词" required>
-        <select name="keyword_sort" title="关键词排序">
+        <input name="target" aria-label="笔记链接或关键词" autocomplete="off" placeholder="粘贴单条笔记链接，或直接输入关键词…" required>
+        <select name="keyword_sort" aria-label="关键词排序">
           <option value="0">综合</option>
           <option value="1">最新</option>
           <option value="2">最多点赞</option>
           <option value="3">最多评论</option>
           <option value="4">最多收藏</option>
         </select>
-        <input type="number" name="limit" value="{{ daily_crawl_remaining if daily_crawl_remaining < daily_crawl_limit else daily_crawl_limit }}" min="1" max="{{ daily_crawl_limit }}" {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>
-        <button type="submit" data-loading-text="采集中..." {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>开始采集</button>
+        <input type="number" name="limit" aria-label="采集数量" inputmode="numeric" value="{{ daily_crawl_remaining if daily_crawl_remaining < daily_crawl_limit else daily_crawl_limit }}" min="1" max="{{ daily_crawl_limit }}" {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>
+        <button type="submit" data-loading-text="采集中…" {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>开始采集</button>
       </form>
       <div class="hint-row">
         <span>排序只影响关键词搜索；单条笔记链接会直接采集该笔记。账号主页请在下面添加固定竞品。</span>
@@ -206,8 +281,8 @@
       </div>
       <p class="muted form-help">竞品账号需要粘贴“小红书主页链接”，例如浏览器地址栏里的 `https://www.xiaohongshu.com/user/profile/...`。备注名只是给你自己看的，可以填昵称；不能只输入小红书名字或小红书号。</p>
       <form method="post" action="/competitors" class="inline-form">
-        <input name="name" placeholder="备注名，例如：某某妈妈，可空">
-        <input name="profile_url" placeholder="粘贴竞品主页链接，不是昵称或小红书号" required>
+        <input name="name" aria-label="竞品备注名" autocomplete="off" placeholder="备注名，例如：某某妈妈，可空…">
+        <input type="url" name="profile_url" aria-label="竞品主页链接" autocomplete="off" inputmode="url" placeholder="粘贴竞品主页链接，不是昵称或小红书号…" required>
         <button type="submit">添加竞品主页</button>
       </form>
       <div class="list">
@@ -218,12 +293,12 @@
             <small>{{ competitor.profile_url }}</small>
           </div>
           <form method="post" action="/crawl/{{ competitor.id }}" class="crawl-form">
-            <select name="sort_mode" title="主页排序">
+            <select name="sort_mode" aria-label="主页排序">
               <option value="latest">最新发布</option>
               <option value="likes">点赞最多</option>
             </select>
-            <input type="number" name="limit" value="{{ daily_crawl_remaining if daily_crawl_remaining < daily_crawl_limit else daily_crawl_limit }}" min="1" max="{{ daily_crawl_limit }}" {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>
-            <button type="submit" data-loading-text="采集中..." {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>采集</button>
+            <input type="number" name="limit" aria-label="采集数量" inputmode="numeric" value="{{ daily_crawl_remaining if daily_crawl_remaining < daily_crawl_limit else daily_crawl_limit }}" min="1" max="{{ daily_crawl_limit }}" {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>
+            <button type="submit" data-loading-text="采集中…" {% if daily_crawl_remaining <= 0 %}disabled{% endif %}>采集</button>
           </form>
         </div>
         {% else %}
@@ -239,10 +314,10 @@
         <h1>内容看板</h1>
         <p>按评分查看采集到的笔记，选择参考内容生成草稿。</p>
         {% if request.query_params.get('content_error') %}
-        <div class="alert error-alert compact-alert">{{ request.query_params.get('content_error') }}</div>
+        <div class="alert error-alert compact-alert" aria-live="polite">{{ request.query_params.get('content_error') }}</div>
         {% endif %}
         {% if request.query_params.get('content_notice') %}
-        <div class="alert success-alert compact-alert">{{ request.query_params.get('content_notice') }}</div>
+        <div class="alert success-alert compact-alert" aria-live="polite">{{ request.query_params.get('content_notice') }}</div>
         {% endif %}
       </div>
       {% if shareable_accounts %}
@@ -270,7 +345,7 @@
       </div>
       <div class="note-cards">
         {% for note in notes %}
-        <article class="note-card">
+        <article class="note-card" {% if note.scoring_status == 'scoring' %}data-scoring-note="{{ note.id }}"{% endif %}>
           <div class="note-score">
             {% if note.score >= 90 %}
             <strong class="hot-score-label">爆款</strong>
@@ -317,10 +392,17 @@
               <h3>{{ note.title or '无标题' }}</h3>
               <span class="badge">{{ note.note_type or '笔记' }}</span>
             </div>
-            {% if note.body %}
-            <p class="note-body">{{ note.body | render_topics }}</p>
+            {% if note.display_body %}
+            <p class="note-body {% if note.keywords %}has-keywords{% endif %}">{{ note.display_body }}</p>
             {% else %}
             <p class="note-body muted">本次返回未包含正文；已先保存标题、图片和互动数据。</p>
+            {% endif %}
+            {% if note.keywords %}
+            <div class="note-keywords" aria-label="关键词">
+              {% for keyword in note.keywords %}
+              <span>#{{ keyword }}</span>
+              {% endfor %}
+            </div>
             {% endif %}
             <small>{{ note.summary }}</small>
           </div>
@@ -336,7 +418,7 @@
             <div class="image-carousel" data-index="0">
               {% for image in note.images %}
               <a class="carousel-slide{% if loop.first %} is-active{% endif %}" href="{{ image.remote_url }}" target="_blank" rel="noopener noreferrer" data-preview-url="{{ image.url }}" data-preview-index="{{ loop.index0 }}">
-                <img src="{{ image.url }}" alt="{{ note.title or '笔记配图' }}" loading="lazy" referrerpolicy="no-referrer">
+                <img src="{{ image.url }}" alt="{{ note.title or '笔记配图' }}" width="210" height="210" loading="lazy" referrerpolicy="no-referrer">
               </a>
               {% endfor %}
               {% if note.images|length > 1 %}
@@ -347,7 +429,7 @@
             </div>
             {% elif note.image_urls %}
             <a href="{{ note.image_urls[0] }}" target="_blank" rel="noopener noreferrer">
-              <img src="{{ note.image_urls[0] }}" alt="{{ note.title or '笔记配图' }}" loading="lazy" referrerpolicy="no-referrer">
+              <img src="{{ note.image_urls[0] }}" alt="{{ note.title or '笔记配图' }}" width="210" height="210" loading="lazy" referrerpolicy="no-referrer">
             </a>
             {% if note.image_urls|length > 1 %}
             <span class="media-count">{{ note.image_urls|length }} 图</span>
@@ -360,11 +442,31 @@
             <span>赞 {{ note.like_count }}</span>
             <span>评 {{ note.comment_count }}</span>
             <span>藏 {{ note.collect_count }}</span>
+            {% if note.published_at %}
+            <span class="publish-time" title="{{ note.published_at }}">
+              发 {{ note.published_at[:10] }}
+              {% if note.publication_age_days is not none %}· 已发布 {{ note.publication_age_days }} 天{% endif %}
+            </span>
+            {% else %}
+            <span class="publish-time muted">发布时间未知</span>
+            {% endif %}
           </div>
           <div class="note-actions">
             <form method="post" action="/notes/{{ note.id }}/score" class="compact-action">
-              <button type="submit" data-loading-text="正在打分...">打分</button>
+              {% if note.scoring_status == 'scoring' %}
+              <button type="button" class="scoring-button" disabled aria-live="polite">
+                <span class="button-spinner" aria-hidden="true"></span>
+                正在打分…
+              </button>
+              {% else %}
+              <button type="submit" data-loading-text="正在提交…">
+                {{ '重新打分' if note.scoring_status == 'failed' else '打分' }}
+              </button>
+              {% endif %}
             </form>
+            {% if note.scoring_status == 'failed' and note.scoring_error %}
+            <small class="scoring-error" title="{{ note.scoring_error }}">上次打分失败</small>
+            {% endif %}
             <form method="post" action="/notes/{{ note.id }}/hide" class="compact-action">
               <button type="submit" class="secondary">隐藏此条</button>
             </form>
@@ -386,9 +488,9 @@
     </header>
     <section class="panel">
       <form method="post" action="/image-references" class="inline-form">
-        <input name="label" placeholder="图片标签，例如：高转化封面">
-        <input name="image_url" placeholder="参考图链接">
-        <input name="analysis" placeholder="人工备注或后续分析结果">
+        <input name="label" aria-label="图片标签" autocomplete="off" placeholder="图片标签，例如：高转化封面…">
+        <input type="url" name="image_url" aria-label="参考图链接" autocomplete="off" inputmode="url" placeholder="参考图链接…">
+        <input name="analysis" aria-label="图片分析备注" autocomplete="off" placeholder="人工备注或后续分析结果…">
         <button type="submit">加入参考</button>
       </form>
       <div class="mini-list">
@@ -417,8 +519,8 @@
           <h2>已确认 / 已发布内容</h2>
         </div>
         <form method="post" action="/published" class="stack">
-          <input name="title" placeholder="标题" required>
-          <textarea name="body" rows="5" placeholder="正文，用于精准重复片段检测" required></textarea>
+          <input name="title" aria-label="内容标题" autocomplete="off" placeholder="标题…" required>
+          <textarea name="body" aria-label="内容正文" autocomplete="off" rows="5" placeholder="正文，用于精准重复片段检测…" required></textarea>
           <button type="submit">加入去重库</button>
         </form>
         <div class="mini-list">
@@ -466,11 +568,11 @@
     <button type="button" class="viewer-close" aria-label="关闭大图">×</button>
     <button type="button" class="viewer-nav viewer-prev" data-direction="-1" aria-label="上一张">‹</button>
     <figure class="viewer-frame">
-      <img src="" alt="大图预览">
+      <img src="" alt="大图预览" width="1200" height="1200">
       <figcaption><b>1</b> / <span>1</span></figcaption>
     </figure>
     <button type="button" class="viewer-nav viewer-next" data-direction="1" aria-label="下一张">›</button>
   </div>
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js?v=20260618-8"></script>
 </body>
 </html>
