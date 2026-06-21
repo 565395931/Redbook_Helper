@@ -549,8 +549,10 @@
             <span>藏 {{ note.collect_count }}</span>
             {% if note.published_at %}
             <span class="publish-time" title="{{ note.published_at }}">
-              发 {{ note.published_at[:10] }}
-              {% if note.publication_age_days is not none %}· 已发布 {{ note.publication_age_days }} 天{% endif %}
+              <span>发 {{ note.published_at[:10] }}</span>
+              {% if note.publication_age_days is not none %}
+              <span>已发布 {{ note.publication_age_days }} 天</span>
+              {% endif %}
             </span>
             {% else %}
             <span class="publish-time muted">发布时间未知</span>

@@ -766,7 +766,7 @@ textarea {
 .content-table-head,
 .note-card {
   display: grid;
-  grid-template-columns: 58px 88px minmax(180px, 0.9fr) 104px 160px 82px 96px;
+  grid-template-columns: 58px 88px minmax(180px, 0.9fr) 104px 160px 96px 96px;
   gap: 10px;
   align-items: start;
 }
@@ -1368,9 +1368,20 @@ textarea {
 }
 
 .metrics .publish-time {
+  display: grid;
   font-size: 11px;
+  gap: 1px;
   line-height: 1.45;
   margin-top: 2px;
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+}
+
+.metrics .publish-time span {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: normal;
   white-space: nowrap;
 }
 
