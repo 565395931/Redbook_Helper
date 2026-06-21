@@ -52,6 +52,22 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
+INVISIBLE_PASTE_CHARS = {
+    "\ufeff": "",
+    "\u200b": "",
+    "\u200c": "",
+    "\u200d": "",
+    "\u2060": "",
+    "\xa0": " ",
+}
+
+
+def clean_pasted_text(value: str | None) -> str:
+    text = str(value or "")
+    for source, target in INVISIBLE_PASTE_CHARS.items():
+        text = text.replace(source, target)
+    return text.strip()
+
 
 def render_topics(value: str | None) -> Markup:
     text = str(value or "")
@@ -1802,6 +1818,7 @@ def delete_setting(setting_key: str = Form(...)) -> RedirectResponse:
 
 @app.post("/accounts")
 def create_account(name: str = Form(...), phone: str = Form(""), cookie: str = Form(...)) -> RedirectResponse:
+    clean_cookie = clean_pasted_text(cookie)
     with connect() as conn:
         has_accounts = conn.execute("SELECT COUNT(*) AS count FROM accounts").fetchone()["count"] > 0
         conn.execute(
@@ -1809,7 +1826,7 @@ def create_account(name: str = Form(...), phone: str = Form(""), cookie: str = F
             INSERT INTO accounts(name, phone, cookie, login_method, login_status, is_current)
             VALUES (?, ?, ?, 'manual_cookie', 'logged_in', ?)
             """,
-            (name.strip(), phone.strip(), cookie.strip(), 0 if has_accounts else 1),
+            (clean_pasted_text(name), clean_pasted_text(phone), clean_cookie, 0 if has_accounts else 1),
         )
     return redirect_page("brand")
 
@@ -1825,6 +1842,7 @@ def switch_account(account_id: int = Form(...), page: str = Form("accounts")) ->
 
 @app.post("/accounts/update-cookie")
 def update_account_cookie(account_id: int = Form(...), cookie: str = Form(...)) -> RedirectResponse:
+    clean_cookie = clean_pasted_text(cookie)
     with connect() as conn:
         conn.execute(
             """
@@ -1833,7 +1851,7 @@ def update_account_cookie(account_id: int = Form(...), cookie: str = Form(...)) 
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """,
-            (cookie.strip(), account_id),
+            (clean_cookie, account_id),
         )
     return redirect_home()
 
@@ -1876,7 +1894,7 @@ def add_competitor(name: str = Form(""), profile_url: str = Form(...)) -> Redire
     current = get_current_account()
     if not current:
         return redirect_home()
-    clean_profile_url = profile_url.strip()
+    clean_profile_url = clean_pasted_text(profile_url)
     with connect() as conn:
         existing = conn.execute(
             "SELECT id FROM competitors WHERE account_id = ? AND profile_url = ? LIMIT 1",
@@ -1886,7 +1904,7 @@ def add_competitor(name: str = Form(""), profile_url: str = Form(...)) -> Redire
             return redirect_page_with_notice("competitors", "该竞品主页已经添加过了。")
         conn.execute(
             "INSERT INTO competitors(account_id, name, profile_url) VALUES (?, ?, ?)",
-            (current["id"], name.strip(), clean_profile_url),
+            (current["id"], clean_pasted_text(name), clean_profile_url),
         )
     return redirect_page_with_notice("competitors", "竞品主页添加成功。")
 
@@ -1950,7 +1968,7 @@ def crawl_any_target(
     request_limit = max(1, min(limit, DAILY_CRAWL_LIMIT, remaining))
     try:
         target_type, notes = crawl_target(
-            target.strip(),
+            clean_pasted_text(target),
             current["cookie"],
             limit=request_limit,
             keyword_sort=keyword_sort,

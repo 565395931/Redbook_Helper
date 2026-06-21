@@ -14,6 +14,21 @@ import urllib3
 
 ROOT = Path(__file__).resolve().parents[2]
 SPIDER_ROOT = ROOT / "vendor" / "Spider_XHS"
+INVISIBLE_PASTE_CHARS = {
+    "\ufeff": "",
+    "\u200b": "",
+    "\u200c": "",
+    "\u200d": "",
+    "\u2060": "",
+    "\xa0": " ",
+}
+
+
+def _clean_pasted_text(value: str | None) -> str:
+    text = str(value or "")
+    for source, target in INVISIBLE_PASTE_CHARS.items():
+        text = text.replace(source, target)
+    return text.strip()
 
 
 def _load_spider_modules() -> None:
@@ -36,6 +51,7 @@ def _spider_runtime():
 
 
 def _parse_note_url(note_url: str) -> tuple[str, str, str]:
+    note_url = _clean_pasted_text(note_url)
     parsed = urlparse(note_url)
     note_id = parsed.path.rstrip("/").split("/")[-1]
     query = parse_qs(parsed.query)
@@ -45,6 +61,7 @@ def _parse_note_url(note_url: str) -> tuple[str, str, str]:
 
 
 def _resolve_share_url(note_url: str) -> str:
+    note_url = _clean_pasted_text(note_url)
     parsed = urlparse(note_url)
     if parsed.netloc.endswith("xhslink.com"):
         try:
@@ -175,6 +192,8 @@ def _timestamp_text(value: Any) -> str:
 
 
 def fetch_web_note_detail(note_url: str, cookie: str) -> dict[str, Any] | None:
+    note_url = _clean_pasted_text(note_url)
+    cookie = _clean_pasted_text(cookie)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
         "Referer": "https://www.xiaohongshu.com/",
@@ -253,6 +272,8 @@ def _merge_note(primary: dict[str, Any] | None, fallback: dict[str, Any] | None)
 
 
 def crawl_note_url(note_url: str, cookie: str) -> list[dict[str, Any]]:
+    note_url = _clean_pasted_text(note_url)
+    cookie = _clean_pasted_text(cookie)
     with _spider_runtime():
         from apis.xhs_pc_apis import XHS_Apis
 
@@ -280,6 +301,8 @@ def _item_like_count(item: dict[str, Any]) -> int:
 
 
 def crawl_user_notes(profile_url: str, cookie: str, limit: int = 20, sort_mode: str = "latest") -> list[dict[str, Any]]:
+    profile_url = _clean_pasted_text(profile_url)
+    cookie = _clean_pasted_text(cookie)
     with _spider_runtime():
         from apis.xhs_pc_apis import XHS_Apis
 
@@ -312,6 +335,8 @@ def crawl_user_notes(profile_url: str, cookie: str, limit: int = 20, sort_mode: 
 
 
 def crawl_keyword_notes(keyword: str, cookie: str, limit: int = 20, sort_type_choice: int = 0) -> list[dict[str, Any]]:
+    keyword = _clean_pasted_text(keyword)
+    cookie = _clean_pasted_text(cookie)
     with _spider_runtime():
         from apis.xhs_pc_apis import XHS_Apis
 
@@ -352,7 +377,7 @@ def crawl_keyword_notes(keyword: str, cookie: str, limit: int = 20, sort_type_ch
 
 
 def detect_target_type(target: str) -> str:
-    value = target.strip()
+    value = _clean_pasted_text(target)
     if "xiaohongshu.com/explore/" in value or "xiaohongshu.com/discovery/item/" in value:
         return "note"
     if "xhslink.com/" in value:
@@ -370,6 +395,8 @@ def crawl_target(
     limit: int = 20,
     keyword_sort: int = 0,
 ) -> tuple[str, list[dict[str, Any]]]:
+    target = _clean_pasted_text(target)
+    cookie = _clean_pasted_text(cookie)
     target_type = detect_target_type(target)
     if target_type == "note":
         return target_type, crawl_note_url(target, cookie)
@@ -379,6 +406,7 @@ def crawl_target(
 
 
 def fetch_self_published(cookie: str) -> list[dict[str, Any]]:
+    cookie = _clean_pasted_text(cookie)
     with _spider_runtime():
         from apis.xhs_creator_apis import XHS_Creator_Apis
 

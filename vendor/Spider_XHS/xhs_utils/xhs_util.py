@@ -2,7 +2,7 @@ import json
 import math
 import random
 import execjs
-from xhs_utils.cookie_util import trans_cookies
+from xhs_utils.cookie_util import clean_pasted_text, trans_cookies
 from loguru import logger
 
 try:
@@ -21,12 +21,28 @@ def generate_x_b3_traceid(len=16):
         x_b3_traceid += "abcdef0123456789"[math.floor(16 * random.random())]
     return x_b3_traceid
 
+def clean_payload(value):
+    if isinstance(value, str):
+        return clean_pasted_text(value)
+    if isinstance(value, dict):
+        return {clean_payload(key): clean_payload(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [clean_payload(item) for item in value]
+    return value
+
 def generate_xs_xs_common(a1, api, data='', method='POST'):
+    a1 = clean_pasted_text(a1)
+    api = clean_pasted_text(api)
+    data = clean_payload(data)
+    method = clean_pasted_text(method)
     ret = js.call('get_request_headers_params', api, data, a1, method)
     xs, xt, xs_common = ret['xs'], ret['xt'], ret['xs_common']
     return xs, xt, xs_common
 
 def generate_xs(a1, api, data=''):
+    a1 = clean_pasted_text(a1)
+    api = clean_pasted_text(api)
+    data = clean_payload(data)
     ret = js.call('get_xs', api, data, a1)
     xs, xt = ret['X-s'], ret['X-t']
     return xs, xt
@@ -77,6 +93,10 @@ def get_request_headers_template():
     }
 
 def generate_headers(a1, api, data='', method='POST'):
+    a1 = clean_pasted_text(a1)
+    api = clean_pasted_text(api)
+    data = clean_payload(data)
+    method = clean_pasted_text(method)
     xs, xt, xs_common = generate_xs_xs_common(a1, api, data, method)
     x_b3_traceid = generate_x_b3_traceid()
     headers = get_request_headers_template()
@@ -89,6 +109,10 @@ def generate_headers(a1, api, data='', method='POST'):
     return headers, data
 
 def generate_request_params(cookies_str, api, data='', method='POST'):
+    cookies_str = clean_pasted_text(cookies_str)
+    api = clean_pasted_text(api)
+    data = clean_payload(data)
+    method = clean_pasted_text(method)
     cookies = trans_cookies(cookies_str)
     a1 = cookies['a1']
     headers, data = generate_headers(a1, api, data, method)
