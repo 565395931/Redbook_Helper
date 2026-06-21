@@ -10,11 +10,6 @@ try:
 except:
     js = execjs.compile(open(r'static/xhs_xs_xsc_56.js', 'r', encoding='utf-8').read())
 
-try:
-    xray_js = execjs.compile(open(r'../static/xhs_xray.js', 'r', encoding='utf-8').read())
-except:
-    xray_js = execjs.compile(open(r'static/xhs_xray.js', 'r', encoding='utf-8').read())
-
 def generate_x_b3_traceid(len=16):
     x_b3_traceid = ""
     for t in range(len):
@@ -48,7 +43,7 @@ def generate_xs(a1, api, data=''):
     return xs, xt
 
 def generate_xray_traceid():
-    return xray_js.call('traceId')
+    return generate_x_b3_traceid(32)
 def get_common_headers():
     return {
         "authority": "www.xiaohongshu.com",
