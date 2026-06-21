@@ -317,6 +317,38 @@ def mark_account_expired(account_id: int) -> None:
         )
 
 
+def mark_account_logged_in(account_id: int) -> None:
+    with connect() as conn:
+        conn.execute(
+            "UPDATE accounts SET login_status = 'logged_in', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (account_id,),
+        )
+
+
+def looks_like_login_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    login_markers = [
+        "cookie",
+        "login",
+        "logged",
+        "unauthorized",
+        "forbidden",
+        "401",
+        "403",
+        "登录",
+        "登錄",
+        "未登录",
+        "未登入",
+        "登录态",
+        "登錄態",
+        "过期",
+        "過期",
+        "无效",
+        "無效",
+    ]
+    return any(marker in message for marker in login_markers)
+
+
 def _note_identity(note: dict) -> tuple[str | None, str | None]:
     note_id = str(note.get("note_id") or "").strip() or None
     note_url = str(note.get("note_url") or "").strip() or None
@@ -1937,8 +1969,10 @@ def crawl_competitor(
             sort_mode=sort_mode,
         )
     except Exception as exc:
-        mark_account_expired(current["id"])
+        if looks_like_login_error(exc):
+            mark_account_expired(current["id"])
         return redirect_page_with_error("competitors", f"采集失败：{exc}")
+    mark_account_logged_in(current["id"])
     try:
         stats = save_crawled_notes(notes, current["id"], competitor_id=competitor_id, source="competitor")
     except Exception as exc:
@@ -1974,8 +2008,10 @@ def crawl_any_target(
             keyword_sort=keyword_sort,
         )
     except Exception as exc:
-        mark_account_expired(current["id"])
+        if looks_like_login_error(exc):
+            mark_account_expired(current["id"])
         return redirect_page_with_error("competitors", f"采集失败：{exc}")
+    mark_account_logged_in(current["id"])
     try:
         stats = save_crawled_notes(notes, current["id"], source=target_type)
     except Exception as exc:
