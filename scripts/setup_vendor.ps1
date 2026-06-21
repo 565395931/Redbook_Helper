@@ -13,9 +13,13 @@ if (-not (Test-Path $spider)) {
 }
 
 if (Test-Path (Join-Path $spider "package.json")) {
-    Push-Location $spider
-    npm install
-    Pop-Location
+    if (Get-Command npm -ErrorAction SilentlyContinue) {
+        Push-Location $spider
+        npm install
+        Pop-Location
+    } else {
+        Write-Host "npm was not found. Skipping Spider_XHS Node dependencies for now."
+    }
 }
 
 if ($IncludeReferencePublisher) {
