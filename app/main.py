@@ -2145,8 +2145,7 @@ def generate_copywriting_result(
             "SELECT * FROM brand_profiles WHERE account_id = ? LIMIT 1", (current["id"],)
         ).fetchone()
     if not brand_profile:
-        log_copywriting_debug({**debug_request, "event": "copywriting_route_validation_failed", "error": "请先完善品牌资料，再生成文案。"})
-        return redirect_page_with_error("copywriting", "请先完善品牌资料，再生成文案。", query_key="copywriting_error")
+        log_copywriting_debug({**debug_request, "event": "copywriting_route_brand_profile_missing"})
 
     try:
         result = generate_copywriting(
