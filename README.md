@@ -20,12 +20,12 @@ Rename-Item .venv .venv.broken
 uv run --python 3.11 python --version
 ```
 
-## GitHub References
+## Bundled References
 
 - `vendor\xhs_ai_publisher`: reference project, not committed to this repo.
-- `vendor\Spider_XHS`: crawler adapter source, not committed because local `.env` may contain Cookies.
+- `vendor\Spider_XHS`: minimal crawler runtime subset required by the app. Local `.env`, `node_modules`, caches, and downloaded data are intentionally not committed.
 
-To restore vendor dependencies on a fresh machine:
+If the vendor folder is missing or you want to restore optional reference projects on a fresh machine:
 
 ```powershell
 .\scripts\setup_vendor.ps1 -IncludeReferencePublisher
@@ -44,6 +44,6 @@ If you have a locally modified `Spider_XHS`, place it at `vendor\Spider_XHS`.
 
 ## Login State
 
-Current MVP supports manual Cookie login-state paste. In short: log in to Xiaohongshu in Chrome, open DevTools, find a request to `edith.xiaohongshu.com`, copy the `cookie` request header, and paste it into the login form.
+Current MVP supports manual Cookie login-state paste. In short: log in to Xiaohongshu in Chrome, open DevTools, search `edith.xiaohongshu`, copy the `cookie` request header, and paste it into the login form.
 
 The next login iteration should mimic `xhs_ai_publisher`: visible browser login plus user-triggered Chrome login-state import. The app must not crawl until a login state exists.
