@@ -206,6 +206,38 @@ def normalize_copywriting_result(
     return {"titles": titles, "body": body, "tags": tags[:10]}
 
 
+def parse_model_json_content(content: str) -> dict[str, Any]:
+    text = str(content or "").strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.I).strip()
+        text = re.sub(r"\s*```$", "", text).strip()
+
+    candidates = [text]
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and start < end:
+        candidates.append(text[start : end + 1])
+    if start != -1:
+        partial = text[start:].strip()
+        candidates.append(re.sub(r",\s*$", "", partial) + "}")
+
+    decoder = json.JSONDecoder()
+    last_error: json.JSONDecodeError | None = None
+    for candidate in dict.fromkeys(item for item in candidates if item):
+        try:
+            parsed = json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            last_error = exc
+            try:
+                parsed, _ = decoder.raw_decode(candidate)
+            except json.JSONDecodeError as raw_exc:
+                last_error = raw_exc
+                continue
+        if isinstance(parsed, dict):
+            return parsed
+    raise ValueError("DeepSeek 返回的 JSON 无法解析，请重试。") from last_error
+
+
 def generate_copywriting(
     *,
     api_key: str,
@@ -226,6 +258,7 @@ def generate_copywriting(
         ],
         "thinking": {"type": "disabled"},
         "response_format": {"type": "json_object"},
+        "max_tokens": 1800,
         "stream": False,
     }
     request_id = uuid4().hex[:12]
@@ -259,10 +292,7 @@ def generate_copywriting(
             debug_record["model_content"] = content
             if not content:
                 raise ValueError("DeepSeek 没有返回内容，请稍后再试。")
-            try:
-                parsed = json.loads(content)
-            except json.JSONDecodeError as exc:
-                raise ValueError("DeepSeek 返回的 JSON 无法解析，请重试。") from exc
+            parsed = parse_model_json_content(content)
             debug_record["parsed_content"] = parsed
             result = normalize_copywriting_result(parsed, brand_profile=brand_profile, form_data=form_data)
             debug_record["normalized_result"] = result
