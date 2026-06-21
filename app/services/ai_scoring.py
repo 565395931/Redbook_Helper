@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parents[2]
 PROMPT_PATH = ROOT / "prompts" / "scoring_prompt.md"
 KIE_URL = "https://api.kie.ai/gemini-3-5-flash-openai/v1/chat/completions"
+DEFAULT_KIE_PROXY = "127.0.0.1:7890"
 load_dotenv(ROOT / ".env")
 load_dotenv()
 
@@ -122,6 +123,15 @@ def _validate_result(result: dict[str, Any]) -> None:
         raise RuntimeError(f"KIE 评分结果缺少字段：{'、'.join(missing)}")
 
 
+def _normalize_proxy_url(proxy: str) -> str:
+    value = str(proxy or "").strip()
+    if not value:
+        return ""
+    if "://" not in value:
+        return f"http://{value}"
+    return value
+
+
 def normalize_score_result(result: dict[str, Any]) -> dict[str, Any]:
     limits = {"封面": 20, "标题": 25, "正文": 35, "情绪价值": 20, "数据表现": 40}
     for key, limit in limits.items():
@@ -140,6 +150,7 @@ def score_note_with_model(
     note: dict[str, Any],
     cover_url: str | None,
     api_token: str = "",
+    proxy: str = "",
 ) -> dict[str, Any]:
     token = api_token.strip() or os.getenv("KIE_API_TOKEN", "").strip()
     if not token:
@@ -174,8 +185,8 @@ def score_note_with_model(
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
-    proxy = os.getenv("KIE_PROXY", "http://127.0.0.1:7890").strip()
-    proxies = {"http": proxy, "https": proxy} if proxy else None
+    proxy_url = _normalize_proxy_url(proxy or os.getenv("KIE_PROXY", DEFAULT_KIE_PROXY))
+    proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else None
     response = requests.post(KIE_URL, json=payload, headers=headers, proxies=proxies, stream=True, timeout=120)
     response.raise_for_status()
 

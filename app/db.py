@@ -152,6 +152,27 @@ def migrate() -> None:
             CREATE TABLE IF NOT EXISTS app_settings (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS copy_generations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                source_note_id INTEGER REFERENCES notes(id) ON DELETE SET NULL,
+                generation_mode TEXT NOT NULL DEFAULT 'normal',
+                differentiation_level TEXT,
+                reference_title TEXT,
+                reference_content TEXT,
+                post_topic TEXT NOT NULL,
+                post_type TEXT NOT NULL,
+                post_goal TEXT NOT NULL,
+                word_count TEXT,
+                core_message TEXT,
+                titles_json TEXT NOT NULL DEFAULT '[]',
+                body TEXT NOT NULL DEFAULT '',
+                tags_json TEXT NOT NULL DEFAULT '[]',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
             """
@@ -167,11 +188,23 @@ def migrate() -> None:
             "ALTER TABLE notes ADD COLUMN scoring_error TEXT",
             "ALTER TABLE notes ADD COLUMN scoring_started_at TEXT",
             "ALTER TABLE notes ADD COLUMN published_at TEXT",
+            "ALTER TABLE app_settings ADD COLUMN created_at TEXT",
+            "ALTER TABLE copy_generations ADD COLUMN word_count TEXT",
+            "ALTER TABLE copy_generations ADD COLUMN generation_mode TEXT NOT NULL DEFAULT 'normal'",
+            "ALTER TABLE copy_generations ADD COLUMN differentiation_level TEXT",
+            "ALTER TABLE copy_generations ADD COLUMN reference_title TEXT",
+            "ALTER TABLE copy_generations ADD COLUMN reference_content TEXT",
         ]:
             try:
                 conn.execute(statement)
             except sqlite3.OperationalError:
                 pass
+        conn.execute(
+            """
+            UPDATE app_settings
+            SET created_at = COALESCE(NULLIF(created_at, ''), updated_at, CURRENT_TIMESTAMP)
+            """
+        )
         conn.execute(
             """
             UPDATE notes

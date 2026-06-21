@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>视频迁移页面模拟</title>
+  <style>
+    :root {
+      --bg: #fff6f5;
+      --panel: #fff;
+      --ink: #151823;
+      --muted: #7a8191;
+      --line: #ece8e6;
+      --line-strong: #d8dee8;
+      --accent: #e91e4d;
+      --accent-dark: #d31643;
+      --soft-accent: #fff1f4;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --blue: #3779f6;
+      --shadow: 0 26px 70px rgba(180, 83, 9, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 72% 12%, rgba(249, 210, 164, 0.18), transparent 22%),
+        linear-gradient(180deg, #fffafa 0%, var(--bg) 100%);
+      color: var(--ink);
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      font-family: Inter, "SF Pro Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .sidebar {
+      height: 100vh;
+      padding: 24px 14px 22px;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 250, 249, 0.86);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 12px 38px;
+    }
+
+    .brand-mark {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 900;
+      box-shadow: 0 8px 22px rgba(233, 30, 77, 0.18);
+    }
+
+    .brand strong { display: block; font-size: 20px; line-height: 1.2; }
+    .brand small { color: var(--muted); display: block; font-size: 14px; margin-top: 4px; }
+
+    .nav { display: grid; gap: 6px; }
+
+    .nav a {
+      min-height: 48px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: #4e5361;
+      text-decoration: none;
+      border-radius: 7px;
+      font-size: 18px;
+      font-weight: 760;
+    }
+
+    .nav a svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav a.active {
+      color: var(--accent);
+      background: #f4f4f5;
+    }
+
+    .account {
+      margin-top: 30px;
+      padding: 20px 4px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .account span {
+      display: block;
+      color: #a4a9b6;
+      font-size: 14px;
+      font-weight: 800;
+      margin: 0 8px 12px;
+    }
+
+    .account-chip {
+      min-height: 46px;
+      padding: 11px 12px;
+      border-radius: 7px;
+      background: #eafbf0;
+      color: #0f7b3a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .settings {
+      margin-top: auto;
+      color: #5f6470;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 17px;
+      font-weight: 760;
+      padding: 10px 16px;
+    }
+
+    .settings svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+    }
+
+    .workspace {
+      min-width: 0;
+      height: 100vh;
+      padding: 14px 28px 22px;
+      display: grid;
+      grid-template-columns: minmax(760px, 1.05fr) minmax(520px, 0.62fr);
+      gap: 24px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid #ffe7e9;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .builder {
+      padding: 30px 26px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .page-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 2px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    .page-head h1 { margin-bottom: 8px; font-size: 26px; line-height: 1.25; }
+    .page-head p { margin-bottom: 0; color: var(--muted); font-size: 15px; line-height: 1.55; max-width: 700px; }
+
+    .outline-button {
+      min-height: 42px;
+      border: 1px solid var(--line-strong);
+      border-radius: 9px;
+      background: #fff;
+      color: #3f4450;
+      padding: 9px 14px;
+      font-size: 14px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .step-title h2 { margin-bottom: 7px; font-size: 21px; }
+    .step-title p { color: var(--muted); font-size: 14px; font-weight: 700; margin-bottom: 0; }
+
+    .upload-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .upload-box {
+      min-height: 292px;
+      border: 1px dashed #c9d3e1;
+      background: linear-gradient(180deg, #fbfdff 0%, #fff 100%);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .upload-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: #edf3fb;
+      display: grid;
+      place-items: center;
+      color: #91a5bd;
+    }
+
+    .upload-icon svg {
+      width: 25px;
+      height: 25px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .upload-box strong { display: block; font-size: 22px; margin-bottom: 8px; }
+    .upload-box p { margin: 0 0 17px; color: #61718a; font-size: 14px; line-height: 1.55; font-weight: 650; }
+
+    .choose-button {
+      min-height: 40px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--blue);
+      color: #fff;
+      padding: 9px 17px;
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .submit-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: auto;
+    }
+
+    .primary-button {
+      min-width: 208px;
+      min-height: 72px;
+      border: 0;
+      border-radius: 18px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 19px;
+      font-weight: 900;
+      box-shadow: 0 24px 36px rgba(233, 30, 77, 0.18);
+    }
+
+    .left-step-two {
+      display: grid;
+      grid-template-columns: 292px minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+      min-height: 470px;
+    }
+
+    .generated-preview {
+      border: 1px solid #e5eaf1;
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 50% 28%, rgba(255, 244, 205, 0.94) 0 20%, transparent 21%),
+        linear-gradient(180deg, #f8fbff, #fff);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .phone-image {
+      width: 168px;
+      aspect-ratio: 9 / 16;
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,0.06), transparent 26%),
+        linear-gradient(145deg, #ffe4d6, #f8a9bd 48%, #7746a7);
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,0.55), 0 18px 46px rgba(99, 55, 92, 0.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .phone-image::before {
+      content: "";
+      position: absolute;
+      width: 76px;
+      height: 76px;
+      left: 46px;
+      top: 72px;
+      border-radius: 50%;
+      background: #ffe2ce;
+      box-shadow: 0 84px 0 34px #f6f0f4;
+    }
+
+    .phone-image::after {
+      content: "";
+      position: absolute;
+      width: 94px;
+      height: 46px;
+      left: 38px;
+      top: 48px;
+      border-radius: 50px 50px 18px 18px;
+      background: #27243a;
+    }
+
+    .generated-preview small {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    .video-work {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .video-upload {
+      flex: 1;
+      min-height: 240px;
+      border: 1px dashed #d5dce7;
+      border-radius: 12px;
+      background: #fbfcfe;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .video-upload strong { display: block; font-size: 22px; margin-bottom: 8px; }
+    .video-upload p { margin: 0 0 17px; color: #61718a; font-size: 14px; line-height: 1.55; font-weight: 650; }
+
+    .queue-panel {
+      padding: 24px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      overflow: hidden;
+    }
+
+    .queue-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .queue-head h2 { margin: 0 0 6px; font-size: 22px; }
+    .queue-head p { margin: 0; color: var(--muted); font-size: 14px; font-weight: 700; }
+
+    .queue-status {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      white-space: nowrap;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .queue-status .dot { width: 14px; height: 14px; background: #d4d8e0; }
+
+    .task-list {
+      display: grid;
+      gap: 14px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .task-card {
+      border: 1px solid #e6eaf0;
+      border-radius: 16px;
+      background: #fff;
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .task-card.is-active {
+      border-color: #ffd7df;
+      box-shadow: 0 12px 34px rgba(233, 30, 77, 0.08);
+    }
+
+    .task-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .task-title h3 { margin: 0 0 5px; font-size: 17px; }
+    .task-title small { color: var(--muted); font-size: 13px; font-weight: 750; }
+
+    .task-state {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .task-state .dot { width: 9px; height: 9px; }
+    .task-state.processing { background: #fffbeb; color: #a16207; }
+    .task-state.processing .dot { background: var(--yellow); box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.16); }
+    .task-state.done { background: #ecfdf3; color: #166534; }
+    .task-state.done .dot { background: var(--green); box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.14); }
+
+    .task-body {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 13px;
+      align-items: center;
+    }
+
+    .task-thumb {
+      width: 92px;
+      aspect-ratio: 9 / 16;
+      border-radius: 12px;
+      background: #f6f7f9;
+      border: 1px solid #e5e9ef;
+      display: grid;
+      place-items: center;
+      color: #c4cad4;
+      overflow: hidden;
+    }
+
+    .task-thumb.has-image {
+      background:
+        radial-gradient(circle at 50% 28%, #ffe2ce 0 18%, transparent 19%),
+        linear-gradient(145deg, #ffe4d6, #f8a9bd 48%, #7746a7);
+    }
+
+    .task-thumb svg {
+      width: 38px;
+      height: 38px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+    }
+
+    .task-steps {
+      display: grid;
+      gap: 9px;
+    }
+
+    .task-step {
+      min-height: 34px;
+      border-radius: 8px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      color: #535b6a;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .mini-light {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d4d8e0;
+      flex: 0 0 auto;
+    }
+
+    .mini-light.green { background: var(--green); }
+    .mini-light.yellow { background: var(--yellow); }
+
+    .task-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .task-action-button {
+      min-height: 40px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .task-action-button.secondary {
+      border-color: var(--line-strong);
+      background: #fff;
+      color: #3f4450;
+    }
+
+    .download-button {
+      border-color: #16a34a;
+      background: #16a34a;
+    }
+
+    .empty-task {
+      border: 1px dashed #dbe1ea;
+      border-radius: 14px;
+      background: #fbfcfe;
+      color: var(--muted);
+      min-height: 112px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 750;
+      line-height: 1.6;
+      padding: 16px;
+    }
+
+    [data-state="step2"] .step1-only { display: none; }
+    [data-state="step1"] .step2-only { display: none; }
+  </style>
+</head>
+<body data-state="step1">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">R</div>
+      <div>
+        <strong>红书工作台</strong>
+        <small>内容运营中心</small>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="主要导航">
+      <a href="#"><svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>首页 / 登录</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>品牌资料</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="16" height="14" x="4" y="6" rx="4"/><path d="M9 11h.01"/><path d="M15 11h.01"/><path d="M9 16c1.5 1 4.5 1 6 0"/></svg>干死同行</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg>内容看板</a>
+      <a href="#"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>图片灵感</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>文案生成</a>
+      <a href="#" class="active"><svg viewBox="0 0 24 24"><path d="m15 10 4.5-2.5v9L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M7 3v3"/><path d="M11 3v3"/><path d="M7 18v3"/><path d="M11 18v3"/></svg>视频迁移</a>
+    </nav>
+
+    <section class="account">
+      <span>当前账号</span>
+      <div class="account-chip">自制儿童绘本 <i class="dot"></i></div>
+    </section>
+
+    <div class="settings">
+      <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      设置
+    </div>
+  </aside>
+
+  <main class="workspace">
+    <section class="panel builder">
+      <header class="page-head">
+        <div>
+          <h1 class="step1-only">视频迁移</h1>
+          <h1 class="step2-only">任务 1：视频迁移</h1>
+          <p class="step1-only">左侧创建新任务，右侧统一管理任务状态。每个任务互相隔离，完成首帧后从任务卡进入第二步。</p>
+          <p class="step2-only">首帧图已生成。上传最多 20 秒的视频后点击迁移，当前任务会继续在右侧更新状态。</p>
+        </div>
+        <button class="outline-button step2-only">回到功能首页</button>
+      </header>
+
+      <section class="step1-only">
+        <div class="step-title">
+          <h2>第一步：上传两张图片</h2>
+          <p>后台自动完成提示词、风格、比例、分辨率和模型设置。</p>
+        </div>
+      </section>
+
+      <section class="upload-grid step1-only">
+        <div class="upload-box">
+          <div>
+            <div class="upload-icon"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></div>
+            <strong>上传图 1</strong>
+            <p>自己拍的视频首帧<br>支持 JPEG、PNG、WEBP、JPG</p>
+            <button class="choose-button">选择文件</button>
+          </div>
+        </div>
+        <div class="upload-box">
+          <div>
+            <div class="upload-icon"><svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <strong>上传图 2</strong>
+            <p>目标脸图片<br>建议正脸清晰、光线稳定</p>
+            <button class="choose-button">选择文件</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="left-step-two step2-only">
+        <div class="generated-preview">
+          <div>
+            <div class="phone-image"></div>
+            <small>任务 1 首帧图<br>已自动带入第二步</small>
+          </div>
+        </div>
+        <div class="video-work">
+          <div class="step-title">
+            <h2>第二步：上传原视频</h2>
+            <p>最多 20 秒，生成完成后可在右侧任务卡下载。</p>
+          </div>
+          <div class="video-upload">
+            <div>
+              <div class="upload-icon"><svg viewBox="0 0 24 24"><path d="m15 10 4.5-2.5v9L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg></div>
+              <strong>上传视频</strong>
+              <p>支持 MP4、MOV、WEBM<br>单条视频最多 20 秒</p>
+              <button class="choose-button">选择文件</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="submit-row">
+        <button class="primary-button step1-only">生成首帧图</button>
+        <button class="primary-button step2-only">视频迁移</button>
+      </div>
+    </section>
+
+    <section class="panel queue-panel">
+      <header class="queue-head">
+        <div>
+          <h2>任务中心</h2>
+          <p>右侧只负责任务状态、进入下一步和下载结果。</p>
+        </div>
+        <div class="queue-status">任务状态灯 <i class="dot"></i></div>
+      </header>
+
+      <div class="task-list step1-only">
+        <article class="task-card is-active">
+          <div class="task-top">
+            <div class="task-title">
+              <h3>任务 1</h3>
+              <small>首帧生成中</small>
+            </div>
+            <div class="task-state processing"><i class="dot"></i>进行中</div>
+          </div>
+          <div class="task-body">
+            <div class="task-thumb"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M10 17h4"/></svg></div>
+            <div class="task-steps">
+              <div class="task-step"><span>1. 生成换脸首帧</span><i class="mini-light yellow"></i></div>
+              <div class="task-step"><span>2. 等待进入视频迁移</span><i class="mini-light"></i></div>
+            </div>
+          </div>
+          <div class="task-actions">
+            <button class="task-action-button secondary">等待首帧完成</button>
+          </div>
+        </article>
+
+        <article class="task-card">
+          <div class="task-top">
+            <div class="task-title">
+              <h3>任务 1</h3>
+              <small>首帧已完成</small>
+            </div>
+            <div class="task-state done"><i class="dot"></i>已完成</div>
+          </div>
+          <div class="task-body">
+            <div class="task-thumb has-image"></div>
+            <div class="task-steps">
+              <div class="task-step"><span>1. 生成换脸首帧</span><i class="mini-light green"></i></div>
+              <div class="task-step"><span>2. 可进入视频迁移</span><i class="mini-light"></i></div>
+            </div>
+          </div>
+          <div class="task-actions">
+            <button class="task-action-button">进入第二步</button>
+          </div>
+        </article>
+
+        <div class="empty-task">点击左侧“生成首帧图”可以继续创建任务 2、任务 3。<br>任务之间独立保存输入、首帧图和最终视频。</div>
+      </div>
+
+      <div class="task-list step2-only">
+        <article class="task-card is-active">
+          <div class="task-top">
+            <div class="task-title">
+              <h3>任务 1</h3>
+              <small>视频迁移中</small>
+            </div>
+            <div class="task-state processing"><i class="dot"></i>进行中</div>
+          </div>
+          <div class="task-body">
+            <div class="task-thumb has-image"></div>
+            <div class="task-steps">
+              <div class="task-step"><span>1. 生成换脸首帧</span><i class="mini-light green"></i></div>
+              <div class="task-step"><span>2. 视频迁移生成中</span><i class="mini-light yellow"></i></div>
+            </div>
+          </div>
+          <div class="task-actions">
+            <button class="task-action-button secondary">等待结果视频</button>
+          </div>
+        </article>
+
+        <article class="task-card">
+          <div class="task-top">
+            <div class="task-title">
+              <h3>任务 1</h3>
+              <small>结果视频已完成</small>
+            </div>
+            <div class="task-state done"><i class="dot"></i>已完成</div>
+          </div>
+          <div class="task-body">
+            <div class="task-thumb has-image"></div>
+            <div class="task-steps">
+              <div class="task-step"><span>1. 生成换脸首帧</span><i class="mini-light green"></i></div>
+              <div class="task-step"><span>2. 视频迁移完成</span><i class="mini-light green"></i></div>
+            </div>
+          </div>
+          <div class="task-actions">
+            <button class="task-action-button download-button">一键下载视频</button>
+          </div>
+        </article>
+
+        <div class="empty-task">点击左侧“回到功能首页”后，可以立即创建任务 2。<br>任务 1 会继续留在右侧独立更新。</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

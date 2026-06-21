@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f7f8">
   <title>红书运营工作台</title>
-  <link rel="stylesheet" href="/static/css/app.css?v=20260618-8">
+  <link rel="stylesheet" href="/static/css/app.css?v=20260621-1">
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到主要内容</a>
@@ -16,6 +16,7 @@
     <symbol id="icon-content" viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></symbol>
     <symbol id="icon-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></symbol>
     <symbol id="icon-review" viewBox="0 0 24 24"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
+    <symbol id="icon-video-migration" viewBox="0 0 24 24"><path d="m15 10 4.5-2.5v9L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M7 3v3"/><path d="M11 3v3"/><path d="M7 18v3"/><path d="M11 18v3"/></symbol>
     <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
   </svg>
   {% set page_name = request.query_params.get('page', 'accounts') %}
@@ -29,12 +30,13 @@
     </div>
 
     <nav class="nav" aria-label="主要导航">
-      <a class="{% if page_name == 'accounts' %}active{% endif %}" href="/?page=accounts" {% if page_name == 'accounts' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-home"/></svg><span>首页 / 登录</span></a>
+      <a class="{% if page_name == 'accounts' %}active{% endif %}" href="/?page=accounts" {% if page_name == 'accounts' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-home"/></svg><span>首页 登录</span></a>
       <a class="{% if page_name == 'brand' %}active{% endif %}" href="/?page=brand" {% if page_name == 'brand' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-profile"/></svg><span>品牌资料</span></a>
-      <a class="{% if page_name == 'competitors' %}active{% endif %}" href="/?page=competitors" {% if page_name == 'competitors' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-crawl"/></svg><span>采集测试</span></a>
+      <a class="{% if page_name == 'competitors' %}active{% endif %}" href="/?page=competitors" {% if page_name == 'competitors' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-crawl"/></svg><span>干死同行</span></a>
       <a class="{% if page_name == 'content' %}active{% endif %}" href="/?page=content" {% if page_name == 'content' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-content"/></svg><span>内容看板</span></a>
       <a class="{% if page_name == 'images' %}active{% endif %}" href="/?page=images" {% if page_name == 'images' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-image"/></svg><span>图片灵感</span></a>
-      <a class="{% if page_name == 'review' %}active{% endif %}" href="/?page=review" {% if page_name == 'review' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-review"/></svg><span>审核去重</span></a>
+      <a class="{% if page_name == 'copywriting' %}active{% endif %}" href="/?page=copywriting" {% if page_name == 'copywriting' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-review"/></svg><span>文案生成</span></a>
+      <a class="{% if page_name == 'video_migration' %}active{% endif %}" href="/?page=video_migration" {% if page_name == 'video_migration' %}aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#icon-video-migration"/></svg><span>视频迁移</span></a>
     </nav>
 
     <section class="account-chip">
@@ -71,11 +73,11 @@
     </div>
   </aside>
 
-  <main class="workspace" id="main-content">
+  <main class="workspace {% if page_name == 'copywriting' %}workspace--copywriting{% endif %}{% if page_name == 'images' %} workspace--images{% endif %}{% if page_name == 'video_migration' %} workspace--video-migration{% endif %}" id="main-content">
     {% if page_name == 'accounts' %}
     <header class="topbar">
       <div>
-        <h1>首页 / 登录</h1>
+        <h1>首页 登录</h1>
         <p>先保存小红书 Cookie 登录态，再进行采集测试、内容评分和草稿去重。</p>
       </div>
     </header>
@@ -142,10 +144,13 @@
         <ol class="help">
           <li>用 Chrome 登录小红书网页版。</li>
           <li>按 F12 打开开发者工具，进入 Network。</li>
-          <li>刷新页面，点开 edith.xiaohongshu.com 请求。</li>
+          <li>刷新页面，搜索 edith.xiaohongshu 请求。</li>
           <li>在 Request Headers 里复制 cookie 整行值。</li>
         </ol>
         <p class="muted note">没有登录态时，系统不会发起小红书采集请求。</p>
+        <figure class="cookie-guide-image">
+          <img src="/static/images/download.png" alt="获取 Cookie 操作示例">
+        </figure>
       </div>
     </section>
     {% endif %}
@@ -169,48 +174,130 @@
       {% if request.query_params.get('settings_notice') %}
       <div class="alert success-alert" aria-live="polite">{{ request.query_params.get('settings_notice') }}</div>
       {% endif %}
-      <form method="post" action="/settings" class="settings-form">
-        <div class="setting-field">
+      <div class="settings-form">
+        <form method="post" action="/settings" class="setting-field">
+          <input type="hidden" name="setting_group" value="kie">
           <div class="setting-label">
             <div>
               <label for="kie-api-key">KIE API Key</label>
-              <small>用于内容看板的 AI 打分</small>
+              <small>用于内容看板 AI 打分和图片灵感 KIE 生图</small>
             </div>
             <span class="config-status {% if saved_settings.get('kie_api_key') %}is-configured{% endif %}">
               {{ '已配置' if saved_settings.get('kie_api_key') else '未配置' }}
             </span>
           </div>
           <input id="kie-api-key" type="password" name="kie_api_key" autocomplete="new-password" spellcheck="false" placeholder="输入新的 KIE API Key…">
-          {% if saved_settings.get('kie_api_key') %}
-          <label class="clear-setting">
-            <input type="checkbox" name="clear_kie_api_key" value="1">
-            <span>清除已保存的 KIE Key</span>
-          </label>
+          {% if setting_details.get('kie_api_key') %}
+          <div class="saved-secret-row">
+            <div class="saved-secret-meta">
+              <strong>{{ setting_details['kie_api_key']['masked_value'] }}</strong>
+              <small>创建于 {{ setting_details['kie_api_key']['created_at'][:10] if setting_details['kie_api_key']['created_at'] else '未知日期' }}</small>
+            </div>
+            <button type="submit" form="delete-kie-api-key" class="icon-button danger-button" aria-label="删除 KIE API Key" title="删除 KIE API Key" data-confirm="确认删除已保存的 KIE API Key？">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
+          </div>
           {% endif %}
-        </div>
+          <div class="settings-actions">
+            <button type="submit">保存 KIE</button>
+          </div>
+        </form>
 
-        <div class="setting-field">
+        <form method="post" action="/settings" class="setting-field">
+          <input type="hidden" name="setting_group" value="deepseek">
           <div class="setting-label">
             <div>
               <label for="deepseek-api-key">DeepSeek API Key</label>
-              <small>预留给后续 DeepSeek 功能</small>
+              <small>用于文案生成等 DeepSeek 请求</small>
             </div>
             <span class="config-status {% if saved_settings.get('deepseek_api_key') %}is-configured{% endif %}">
               {{ '已配置' if saved_settings.get('deepseek_api_key') else '未配置' }}
             </span>
           </div>
           <input id="deepseek-api-key" type="password" name="deepseek_api_key" autocomplete="new-password" spellcheck="false" placeholder="输入新的 DeepSeek API Key…">
-          {% if saved_settings.get('deepseek_api_key') %}
-          <label class="clear-setting">
-            <input type="checkbox" name="clear_deepseek_api_key" value="1">
-            <span>清除已保存的 DeepSeek Key</span>
-          </label>
+          {% if setting_details.get('deepseek_api_key') %}
+          <div class="saved-secret-row">
+            <div class="saved-secret-meta">
+              <strong>{{ setting_details['deepseek_api_key']['masked_value'] }}</strong>
+              <small>创建于 {{ setting_details['deepseek_api_key']['created_at'][:10] if setting_details['deepseek_api_key']['created_at'] else '未知日期' }}</small>
+            </div>
+            <button type="submit" form="delete-deepseek-api-key" class="icon-button danger-button" aria-label="删除 DeepSeek API Key" title="删除 DeepSeek API Key" data-confirm="确认删除已保存的 DeepSeek API Key？">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
+          </div>
           {% endif %}
-        </div>
+          <div class="settings-actions">
+            <button type="submit">保存 DeepSeek</button>
+          </div>
+        </form>
 
-        <div class="settings-actions">
-          <button type="submit">保存设置</button>
-        </div>
+        <form method="post" action="/settings" class="setting-field">
+          <input type="hidden" name="setting_group" value="proxy">
+          <div class="setting-label">
+            <div>
+              <label for="kie-proxy">代理设置</label>
+              <small>用于内容看板打分和图片灵感的 KIE 请求</small>
+            </div>
+            <span class="config-status {% if saved_settings.get('kie_proxy') %}is-configured{% endif %}">
+              {{ '已配置' if saved_settings.get('kie_proxy') else '未配置' }}
+            </span>
+          </div>
+          <input id="kie-proxy" type="text" name="kie_proxy" autocomplete="off" spellcheck="false" placeholder="127.0.0.1:7890" value="{{ setting_values.get('kie_proxy', '127.0.0.1:7890') }}">
+          <div class="saved-secret-row">
+            <div class="saved-secret-meta">
+              <strong>{{ setting_values.get('kie_proxy', '127.0.0.1:7890') }}</strong>
+              <small>默认 127.0.0.1:7890，保存时可填写 http:// 或直接填写地址端口</small>
+            </div>
+            {% if setting_details.get('kie_proxy') %}
+            <button type="submit" form="delete-kie-proxy" class="icon-button danger-button" aria-label="恢复默认代理" title="恢复默认代理" data-confirm="确认恢复默认代理 127.0.0.1:7890？">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
+            {% endif %}
+          </div>
+          <div class="settings-actions">
+            <button type="submit">保存代理</button>
+          </div>
+        </form>
+
+        <form method="post" action="/settings" class="setting-field">
+          <input type="hidden" name="setting_group" value="runninghub">
+          <div class="setting-label">
+            <div>
+              <label for="runninghub-api-key">RunningHub API Key</label>
+              <small>用于视频迁移第二步调用 RunningHub WebApp</small>
+            </div>
+            <span class="config-status {% if saved_settings.get('runninghub_api_key') %}is-configured{% endif %}">
+              {{ '已配置' if saved_settings.get('runninghub_api_key') else '未配置' }}
+            </span>
+          </div>
+          <input id="runninghub-api-key" type="password" name="runninghub_api_key" autocomplete="new-password" spellcheck="false" placeholder="输入新的 RunningHub API Key…">
+          {% if setting_details.get('runninghub_api_key') %}
+          <div class="saved-secret-row">
+            <div class="saved-secret-meta">
+              <strong>{{ setting_details['runninghub_api_key']['masked_value'] }}</strong>
+              <small>创建于 {{ setting_details['runninghub_api_key']['created_at'][:10] if setting_details['runninghub_api_key']['created_at'] else '未知日期' }}</small>
+            </div>
+            <button type="submit" form="delete-runninghub-api-key" class="icon-button danger-button" aria-label="删除 RunningHub API Key" title="删除 RunningHub API Key" data-confirm="确认删除已保存的 RunningHub API Key？">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
+          </div>
+          {% endif %}
+          <div class="settings-actions">
+            <button type="submit">保存 RunningHub</button>
+          </div>
+        </form>
+      </div>
+      <form id="delete-kie-api-key" method="post" action="/settings/delete" class="secret-delete-form">
+        <input type="hidden" name="setting_key" value="kie_api_key">
+      </form>
+      <form id="delete-deepseek-api-key" method="post" action="/settings/delete" class="secret-delete-form">
+        <input type="hidden" name="setting_key" value="deepseek_api_key">
+      </form>
+      <form id="delete-kie-proxy" method="post" action="/settings/delete" class="secret-delete-form">
+        <input type="hidden" name="setting_key" value="kie_proxy">
+      </form>
+      <form id="delete-runninghub-api-key" method="post" action="/settings/delete" class="secret-delete-form">
+        <input type="hidden" name="setting_key" value="runninghub_api_key">
       </form>
     </section>
     {% endif %}
@@ -220,15 +307,33 @@
       <div>
         <h1>品牌资料</h1>
         <p>用来约束后续文案生成方向，少填也能先跑测试。</p>
+        {% if request.query_params.get('brand_notice') %}
+        <div class="alert success-alert compact-alert" aria-live="polite">{{ request.query_params.get('brand_notice') }}</div>
+        {% endif %}
       </div>
     </header>
     <section class="panel">
       <form method="post" action="/brand-profile" class="brand-form">
-        <input name="main_theme" aria-label="账号主要主题" autocomplete="off" placeholder="账号主要主题，例如：职场穿搭 / 母婴好物…" value="{{ brand_profile.main_theme if brand_profile else '' }}">
-        <input name="audience" aria-label="目标人群" autocomplete="off" placeholder="目标人群，例如：25–35 岁通勤女性…" value="{{ brand_profile.audience if brand_profile else '' }}">
-        <input name="tone" aria-label="表达风格" autocomplete="off" placeholder="表达风格，例如：真实、有细节、不硬广…" value="{{ brand_profile.tone if brand_profile else '' }}">
-        <textarea name="product_points" aria-label="产品或服务卖点" autocomplete="off" rows="4" placeholder="产品 / 服务卖点，可选…">{{ brand_profile.product_points if brand_profile else '' }}</textarea>
-        <textarea name="banned_words" aria-label="禁用词" autocomplete="off" rows="3" placeholder="禁用词或不想出现的表达，可选…">{{ brand_profile.banned_words if brand_profile else '' }}</textarea>
+        <div class="brand-field">
+          <label for="brand-main-theme">账号主题</label>
+          <input id="brand-main-theme" name="main_theme" aria-label="账号主题" autocomplete="off" placeholder="例如：职场穿搭 / 母婴好物 / 本地探店…" value="{{ brand_profile.main_theme if brand_profile else '' }}">
+        </div>
+        <div class="brand-field">
+          <label for="brand-audience">目标人群</label>
+          <input id="brand-audience" name="audience" aria-label="目标人群" autocomplete="off" placeholder="例如：25–35 岁通勤女性 / 新手妈妈 / 创业店主…" value="{{ brand_profile.audience if brand_profile else '' }}">
+        </div>
+        <div class="brand-field">
+          <label for="brand-tone">表达风格</label>
+          <input id="brand-tone" name="tone" aria-label="表达风格" autocomplete="off" placeholder="例如：真实、有细节、像朋友聊天、专业但不生硬、真诚有共鸣…" value="{{ brand_profile.tone if brand_profile else '' }}">
+        </div>
+        <div class="brand-field brand-field-full">
+          <label for="brand-product-points">产品 / 服务卖点（可选）</label>
+          <textarea id="brand-product-points" name="product_points" aria-label="产品或服务卖点" autocomplete="off" rows="4" placeholder="例如：见效快、操作简单、适合新手、可复制、性价比高…">{{ brand_profile.product_points if brand_profile else '' }}</textarea>
+        </div>
+        <div class="brand-field brand-field-full">
+          <label for="brand-banned-words">禁用词（可选）</label>
+          <textarea id="brand-banned-words" name="banned_words" aria-label="禁用词" autocomplete="off" rows="3" placeholder="例如：最强、绝对有效、闭眼冲，或你不想出现的品牌表达…">{{ brand_profile.banned_words if brand_profile else '' }}</textarea>
+        </div>
         <button type="submit">保存资料</button>
       </form>
     </section>
@@ -467,6 +572,12 @@
             {% if note.scoring_status == 'failed' and note.scoring_error %}
             <small class="scoring-error" title="{{ note.scoring_error }}">上次打分失败</small>
             {% endif %}
+            <div class="compact-action">
+              <button type="button" class="secondary" data-open-remix-modal data-note-id="{{ note.id }}" data-note-title="{{ note.title or '未命名笔记' }}" onclick="window.openRemixModalFromButton && window.openRemixModalFromButton(this)">文案复刻</button>
+            </div>
+            <form method="post" action="/notes/{{ note.id }}/cover-reference" class="compact-action">
+              <button type="submit" class="secondary">封面复刻</button>
+            </form>
             <form method="post" action="/notes/{{ note.id }}/hide" class="compact-action">
               <button type="submit" class="secondary">隐藏此条</button>
             </form>
@@ -479,7 +590,151 @@
     </section>
     {% endif %}
 
-    {% if current and page_name == 'images' %}
+
+    {% if current and page_name == 'copywriting' %}
+    <section class="copywriting-layout">
+      <article class="panel copywriting-form-panel">
+        <div class="panel-head">
+          <h2>创作参数</h2>
+          <span
+            class="copywriting-status-badge is-{{ copywriting_status }}"
+            data-copywriting-status
+            data-idle-label="待生成"
+            data-loading-label="生成中"
+            data-success-label="已生成"
+            data-error-label="生成失败"
+          >
+            <span class="copywriting-status-dot" aria-hidden="true"></span>
+            <span>{{ copywriting_status_label }}</span>
+          </span>
+        </div>
+        <form method="post" action="/copywriting/generate" class="copywriting-form" data-copywriting-form id="copywritingForm">
+          <input type="hidden" name="source_note_id" value="{{ copywriting_form.source_note_id }}">
+          <input type="hidden" name="generation_mode" value="{{ copywriting_form.generation_mode }}">
+          <input type="hidden" name="differentiation_level" value="{{ copywriting_form.differentiation_level }}">
+          <input type="hidden" name="reference_title" value="{{ copywriting_form.reference_title }}">
+          <input type="hidden" name="reference_content" value="{{ copywriting_form.reference_content }}">
+
+          <div class="copywriting-textarea-field">
+            <label for="post-topic">选题方向</label>
+            <textarea id="post-topic" name="post_topic" rows="3" aria-label="本次想分享什么内容" autocomplete="off" placeholder="例如：我为什么把小红书选题流程重新做了一遍…" required>{{ copywriting_form.post_topic }}</textarea>
+          </div>
+
+          <div class="copywriting-select-row">
+            <div class="copywriting-select-field">
+              <label for="post-type">内容体裁</label>
+              <select id="post-type" name="post_type" aria-label="笔记类型">
+                {% for item in copywriting_types %}
+                <option value="{{ item }}" {% if copywriting_form.post_type == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="copywriting-select-field">
+              <label for="post-goal">发布诉求</label>
+              <select id="post-goal" name="post_goal" aria-label="发布目标">
+                {% for item in copywriting_goals %}
+                <option value="{{ item }}" {% if copywriting_form.post_goal == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+          </div>
+
+          <div class="copywriting-textarea-field">
+            <label for="core-message">创作提要（可选）</label>
+            <textarea id="core-message" name="core_message" rows="4" aria-label="核心观点" autocomplete="off" placeholder="这篇笔记最想表达什么…">{{ copywriting_form.core_message }}</textarea>
+          </div>
+
+          <div class="copywriting-footer-row">
+            <div class="copywriting-select-field copywriting-word-count-field copywriting-word-count-inline">
+              <label for="word-count">字数</label>
+              <select id="word-count" name="word_count" aria-label="正文目标字数">
+                {% for item in copywriting_word_counts %}
+                <option value="{{ item }}" {% if copywriting_form.word_count == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+          <div class="copywriting-submit-row">
+            <button type="submit" data-loading-text="正在生成…">生成文案</button>
+          </div>
+          </div>
+        </form>
+      </article>
+
+      <article class="panel copywriting-result-panel" data-copywriting-result-panel>
+        <div class="copywriting-loading" data-copywriting-loading hidden aria-live="polite">
+          <div class="copywriting-loading-orb" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="copywriting-loading-copy">
+            <h3>正在生成正文</h3>
+            <p>正在请求模型并整理标题、正文和标签，请稍候…</p>
+          </div>
+        </div>
+
+        {% if copywriting_result %}
+        <div class="copywriting-result">
+          <section class="result-section title-result-section">
+            <div class="result-head">
+              <h3>标题</h3>
+              <button type="button" class="ghost-copy-button copy-button" data-copy-target="copywritingTitle">复制标题</button>
+            </div>
+            <div class="title-options" role="radiogroup" aria-label="标题候选">
+              {% for title in copywriting_result.titles %}
+              <label class="title-option">
+                <input type="radio" name="selected_title" value="{{ title }}" {% if loop.first %}checked{% endif %}>
+                <span>{{ title }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="result-section">
+            <div class="result-head">
+              <h3>正文</h3>
+              <button type="button" class="ghost-copy-button" data-copy-target="copywritingBody">复制正文</button>
+            </div>
+            <article class="generated-body" id="copywritingBody">{{ copywriting_result.body }}</article>
+          </section>
+
+          <section class="result-section">
+            <div class="result-head">
+              <h3>推荐标签</h3>
+            </div>
+            <div class="generated-tags" id="copywritingTags">
+              {% for tag in copywriting_result.tags %}
+              <strong>#{{ tag }}</strong>
+              {% endfor %}
+            </div>
+          </section>
+
+          <textarea id="copywritingTitle" class="copywriting-payload" aria-hidden="true" tabindex="-1">{% for title in copywriting_result.titles %}{% if loop.first %}{{ title }}{% endif %}{% endfor %}</textarea>
+        </div>
+        {% else %}
+        <div class="copywriting-empty" data-copywriting-empty-state>
+          <span>等待生成</span>
+        </div>
+        {% endif %}
+
+        <div class="copywriting-result-actions">
+          <button type="submit" class="result-action-button result-action-regenerate" form="copywritingForm">重新生成</button>
+          {% if has_copywriting_history %}
+          <a class="button-link result-action-button result-action-history" href="/?page=copywriting&show_latest=1">显示上次</a>
+          {% else %}
+          <span class="copywriting-history-empty">暂无上次结果</span>
+          {% endif %}
+        </div>
+
+      </article>
+    </section>
+    {% endif %}
+
+
+    {% if current and page_name == '_images_legacy' %}
     <header class="topbar">
       <div>
         <h1>图片灵感</h1>
@@ -503,7 +758,7 @@
     </section>
     {% endif %}
 
-    {% if current and page_name == 'review' %}
+    {% if current and page_name == '_review_legacy' %}
     <header class="topbar">
       <div>
         <h1>审核去重</h1>
@@ -563,6 +818,411 @@
       </div>
     </section>
     {% endif %}
+    {% if current and page_name == 'images' %}
+    <section class="images-layout">
+      <article class="panel images-form-panel">
+        <div class="images-form-top">
+          <div class="segmented-switch segmented-switch--primary" role="tablist" aria-label="图片工作模式">
+            <button type="button" class="segment-button is-active" data-image-form-mode="prompt">文生图模式</button>
+            <button type="button" class="segment-button" data-image-form-mode="remix">图生图模式</button>
+          </div>
+        </div>
+
+        {% if request.query_params.get('image_notice') %}
+        <div class="alert success-alert compact-alert" aria-live="polite" data-auto-dismiss="5000" data-remove-query="image_notice">{{ request.query_params.get('image_notice') }}</div>
+        {% endif %}
+        {% if request.query_params.get('image_error') %}
+        <div class="alert error-alert compact-alert" aria-live="polite" data-auto-dismiss="5000" data-remove-query="image_error">{{ request.query_params.get('image_error') }}</div>
+        {% endif %}
+
+        <form method="post" action="/image-references" class="images-form" data-image-form id="imageReferenceForm" enctype="multipart/form-data">
+          <input type="hidden" name="label" id="imageLabelField" value="图片灵感结果">
+          <input type="hidden" name="image_url" id="imageUrlField">
+          <input type="hidden" name="image_mode" id="imageModeField" value="prompt">
+
+          <section class="image-mode-panel" data-image-panel="prompt">
+            <div class="copywriting-textarea-field">
+              <label for="imagePromptField">主题描述 / Prompt</label>
+              <textarea id="imagePromptField" name="prompt" rows="5" aria-label="主题描述或Prompt" autocomplete="off" placeholder="例如：做一组高级感护肤品封面，奶油光，浅米色背景，局部花材，近景产品特写。" required></textarea>
+            </div>
+          </section>
+
+          <section class="image-mode-panel is-hidden" data-image-panel="remix">
+            <div class="image-remix-upload">
+              <label class="reference-dropzone">
+                <input type="file" name="reference_images" accept="image/jpeg,image/png,image/webp,image/jpg" multiple data-local-image-input data-preview-target="referencePreview" data-preview-label="参考图预览区">
+                <span class="reference-dropzone-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+                </span>
+                <strong>点击上传或拖拽参考图</strong>
+                <small>支持 JPEG、PNG、WEBP、JPG，最多 4 张，单张不超过 30MB。</small>
+                <span class="reference-select-button">选择文件</span>
+              </label>
+
+              <div class="reference-preview-shell" id="referencePreview" data-reference-preview>
+                <div class="reference-preview-empty">
+                  <strong>本地上传参考图</strong>
+                  <small>上传后会在这里预览，最多 4 张自动并排展示。</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="copywriting-textarea-field">
+              <label for="imageRemixPromptField">主题描述 / Prompt</label>
+              <textarea id="imageRemixPromptField" name="analysis" rows="5" aria-label="图生图主题描述或Prompt" autocomplete="off" placeholder="例如：保留参考图主体姿态，背景更干净，整体更适合做小红书封面。"></textarea>
+            </div>
+          </section>
+
+          <div class="image-option-stack">
+            <label class="image-inline-field">
+              <span>输出风格</span>
+              <select name="output_target" aria-label="输出风格">
+                <option value="无" selected>无</option>
+                <option value="小红书封面">小红书封面</option>
+                <option value="商品主图">商品主图</option>
+                <option value="详情页主图">详情页主图</option>
+              </select>
+            </label>
+
+            <label class="image-inline-field">
+              <span>图像规格</span>
+              <select name="aspect_ratio" aria-label="图像规格">
+                <option value="9:16" selected>9:16</option>
+                <option value="1:1">1:1</option>
+                <option value="16:9">16:9</option>
+              </select>
+            </label>
+
+            <label class="image-inline-field">
+              <span>分辨率</span>
+              <select name="resolution" aria-label="分辨率">
+                <option value="1K" selected>1K</option>
+                <option value="2K">2K</option>
+              </select>
+            </label>
+
+            <label class="image-inline-field">
+              <span>模型选择</span>
+              <select name="image_model" aria-label="模型选择">
+                <option value="gpt-image-2-text-to-image" selected>GPT-image-2</option>
+                <option value="nano-banana-2">Google-香蕉-2</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="images-submit-row images-submit-row--single">
+            <button type="submit" data-loading-text="正在生成…">开始生成图像</button>
+          </div>
+        </form>
+      </article>
+
+      <article class="panel copywriting-result-panel images-result-panel" data-image-result-panel>
+        <div class="images-result-head">
+          <div class="segmented-switch segmented-switch--result" role="tablist" aria-label="结果工作模式">
+            <button type="button" class="segment-button is-active" data-image-result-mode="prompt">文生图</button>
+            <button type="button" class="segment-button" data-image-result-mode="remix">图生图</button>
+          </div>
+          <div class="image-status-headline">
+            <span>任务状态灯</span>
+            <span
+              class="image-status-indicator is-idle"
+              data-image-status-dot
+              title="等待任务"
+            ></span>
+          </div>
+        </div>
+
+        <div class="images-task-groups">
+          <section class="image-task-group" data-task-group="prompt">
+            {% if image_tasks_prompt %}
+            <div class="image-task-tabs">
+              {% for task in image_tasks_prompt %}
+              <span class="image-task-pill">
+                <button
+                  type="button"
+                  class="image-task-tab {% if task.is_selected %}is-active{% endif %}"
+                  data-image-task
+                  data-task-mode="prompt"
+                  data-task-id="{{ task.id }}"
+                  data-task-status="{{ task.status }}"
+                  data-task-backend-status="{{ task.backend_status }}"
+                  data-task-prompt="{{ task.prompt }}"
+                  data-task-final-prompt="{{ task.final_prompt }}"
+                  data-task-target="{{ task.output_target }}"
+                  data-task-ratio="{{ task.aspect_ratio }}"
+                  data-task-resolution="{{ task.resolution }}"
+                  data-task-model="{{ task.image_model_label }}"
+                  data-task-image="{{ task.image_url }}"
+                  data-task-progress="{{ task.progress }}"
+                  data-task-error="{{ task.error }}"
+                  data-task-eta="{{ task.eta_seconds }}"
+                  title="{{ task.final_prompt or task.prompt }}"
+                >
+                  {{ task.tab_label }}
+                </button>
+                <form method="post" action="/image-tasks/{{ task.id }}/delete" class="image-task-delete-form">
+                  <button type="submit" class="image-task-delete" aria-label="删除 {{ task.tab_label }}" title="删除任务">×</button>
+                </form>
+              </span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </section>
+
+          <section class="image-task-group is-hidden" data-task-group="remix">
+            {% if image_tasks_remix %}
+            <div class="image-task-tabs">
+              {% for task in image_tasks_remix %}
+              <span class="image-task-pill">
+                <button
+                  type="button"
+                  class="image-task-tab {% if task.is_selected %}is-active{% endif %}"
+                  data-image-task
+                  data-task-mode="remix"
+                  data-task-id="{{ task.id }}"
+                  data-task-status="{{ task.status }}"
+                  data-task-backend-status="{{ task.backend_status }}"
+                  data-task-prompt="{{ task.prompt }}"
+                  data-task-final-prompt="{{ task.final_prompt }}"
+                  data-task-target="{{ task.output_target }}"
+                  data-task-ratio="{{ task.aspect_ratio }}"
+                  data-task-resolution="{{ task.resolution }}"
+                  data-task-model="{{ task.image_model_label }}"
+                  data-task-image="{{ task.image_url }}"
+                  data-task-progress="{{ task.progress }}"
+                  data-task-error="{{ task.error }}"
+                  data-task-eta="{{ task.eta_seconds }}"
+                  title="{{ task.final_prompt or task.prompt }}"
+                >
+                  {{ task.tab_label }}
+                </button>
+                <form method="post" action="/image-tasks/{{ task.id }}/delete" class="image-task-delete-form">
+                  <button type="submit" class="image-task-delete" aria-label="删除 {{ task.tab_label }}" title="删除任务">×</button>
+                </form>
+              </span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </section>
+        </div>
+
+        <div class="image-task-meta" data-image-task-meta>
+          <div class="image-task-summary">
+            <strong id="imageTaskPrompt" title="">正在等待任务</strong>
+            <p id="imageTaskInfo">输出风格：-- | 图像规格：-- | 分辨率：--</p>
+          </div>
+        </div>
+
+        <div class="images-result">
+          <section class="image-stage-card">
+            <div class="image-stage-canvas" data-image-stage-canvas>
+              <div class="image-empty-state" data-image-empty-state>
+                <div class="image-empty-icon" aria-hidden="true"></div>
+                <strong>正在等待任务入池</strong>
+                <p>请在左侧填写信息并开始生成图像</p>
+              </div>
+              <div class="image-stage-loading" data-image-loading hidden aria-live="polite">
+                <div class="image-loading-spinner" aria-hidden="true">
+                  <span></span><span></span><span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="image-error-mark" data-image-error-mark hidden aria-hidden="true">!</div>
+                <span data-image-loading-title>正在生成中...</span>
+                <small>正在生成</small>
+              </div>
+              <button type="button" class="image-result-frame" data-image-preview-button data-preview-src="" hidden>
+                <img id="imageResultPreview" src="" alt="图片结果" loading="eager" referrerpolicy="no-referrer">
+              </button>
+            </div>
+            <div class="image-stage-actions">
+              <button type="button" class="ghost-copy-button image-stage-copy" data-copy-image-target="imageResultPreview">一键复制</button>
+            </div>
+          </section>
+        </div>
+      </article>
+    </section>
+    {% endif %}
+    {% if current and page_name == 'video_migration' %}
+    <section class="video-migration-layout" data-video-migration>
+      <article class="panel video-migration-work-panel">
+        <header class="video-migration-head">
+          <div>
+            <h1 data-video-page-title>视频迁移</h1>
+            <p data-video-page-subtitle>左侧创建新任务，右侧统一管理任务状态。每个任务互相隔离，完成首帧后从任务卡进入第二步。</p>
+          </div>
+          <button type="button" class="secondary video-migration-home-button" data-video-back-home hidden>回到功能首页</button>
+        </header>
+
+        <form method="post" action="/video-migration/step1" class="video-migration-step-one" data-video-step-one-form enctype="multipart/form-data">
+          <div class="video-migration-step-title">
+            <h2>第一步：上传两张图片</h2>
+            <p>后台自动使用内置提示词、无风格、9:16、1K 和 nanobanana-2。</p>
+          </div>
+
+          <div class="video-migration-upload-grid">
+            <label class="video-migration-dropzone">
+              <input type="file" name="source_image" accept="image/jpeg,image/png,image/webp,image/jpg" data-video-image-input="source" required>
+              <span class="video-migration-preview" data-video-preview="source"></span>
+              <span class="video-migration-dropzone-content">
+                <span class="video-migration-upload-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+                </span>
+                <strong>上传图 1</strong>
+                <small>自己拍的视频首帧<br>支持 JPEG、PNG、WEBP、JPG</small>
+                <span class="reference-select-button">选择文件</span>
+                <span class="video-migration-file-name" data-video-file-name="source">未选择文件</span>
+              </span>
+            </label>
+
+            <label class="video-migration-dropzone">
+              <input type="file" name="face_image" accept="image/jpeg,image/png,image/webp,image/jpg" data-video-image-input="face" required>
+              <span class="video-migration-preview" data-video-preview="face"></span>
+              <span class="video-migration-dropzone-content">
+                <span class="video-migration-upload-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+                <strong>上传图 2</strong>
+                <small>目标脸图片<br>建议正脸清晰、光线稳定</small>
+                <span class="reference-select-button">选择文件</span>
+                <span class="video-migration-file-name" data-video-file-name="face">未选择文件</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="video-migration-submit-row">
+            <button type="submit" data-loading-text="正在生成首帧…">生成首帧图</button>
+          </div>
+        </form>
+
+        <form class="video-migration-step-two" data-video-step-two-form hidden>
+          <div class="video-migration-step-title">
+            <h2>第二步：上传目标视频</h2>
+            <p>首帧图已生成。上传最多 20 秒的视频后点击生成，后台会调用 RunningHub 视频迁移。</p>
+          </div>
+
+          <div class="video-migration-step-two-grid">
+            <section class="video-migration-result-preview">
+              <div class="video-migration-result-frame">
+                <img id="videoStepTwoImage" src="" alt="任务首帧结果" data-video-step-two-image>
+              </div>
+              <button type="button" class="ghost-copy-button video-migration-copy-image" data-copy-image-target="videoStepTwoImage">一键复制</button>
+              <small data-video-step-two-caption>任务首帧图</small>
+            </section>
+
+            <label class="video-migration-video-dropzone">
+              <input type="file" name="target_video" accept="video/mp4,video/quicktime,video/webm" data-video-input="target-video">
+              <span class="video-migration-video-preview" data-video-preview="target-video"></span>
+              <span class="video-migration-step-two-loading" data-video-step-two-loading hidden aria-live="polite">
+                <span class="image-loading-spinner" aria-hidden="true">
+                  <span></span><span></span><span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span><span></span><span></span><span></span>
+                </span>
+                <span>
+                  <strong>正在生成视频迁移</strong>
+                  <p>任务会继续在右侧独立更新，完成后会在这里显示视频。</p>
+                </span>
+              </span>
+              <span class="video-migration-upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m15 10 4.5-2.5v9L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg>
+              </span>
+              <strong>上传目标视频</strong>
+              <small>支持 MP4、MOV、WEBM<br>单条视频最多 20 秒</small>
+              <span class="reference-select-button">选择文件</span>
+              <span class="video-migration-file-name" data-video-file-name="target-video">未选择文件</span>
+            </label>
+          </div>
+
+          <div class="video-migration-submit-row">
+            <button type="submit">点击生成</button>
+          </div>
+        </form>
+      </article>
+
+      <article class="panel video-migration-task-panel">
+        <div class="video-migration-task-head">
+          <div>
+            <h2>任务中心</h2>
+            <p>右侧只负责任务状态、进入下一步和下载结果。</p>
+          </div>
+          <div class="image-status-headline">
+            <span>任务状态灯</span>
+            <span class="image-status-indicator is-idle" data-video-global-status title="等待任务"></span>
+          </div>
+        </div>
+
+        <div class="video-migration-task-list" data-video-task-list>
+          {% for task in video_migration_tasks %}
+          <article
+            class="video-migration-task-card {% if task.is_selected or loop.first %}is-active{% endif %}"
+            data-video-task-card
+            data-task-id="{{ task.id }}"
+            data-task-label="{{ task.tab_label }}"
+            data-task-display-index="{{ task.display_index }}"
+            data-task-status="{{ 'done' if task.status == 'success' else 'error' if task.status == 'error' else 'processing' }}"
+            data-task-backend-status="{{ task.backend_status }}"
+            data-task-video-status="{{ task.video_status or 'idle' }}"
+            data-task-runninghub-status="{{ task.runninghub_status }}"
+            data-task-progress="{{ task.progress }}"
+            data-task-error="{{ task.error }}"
+            data-task-result-image="{{ task.result_image_url }}"
+            data-task-result-video="{{ task.result_video_url }}"
+            data-task-source-image="{{ task.source_image_url }}"
+          >
+            <button type="button" class="video-migration-task-delete" data-video-delete-task="{{ task.id }}" aria-label="删除 {{ task.tab_label }}" title="删除任务">×</button>
+            <div class="video-migration-task-top">
+              <div class="video-migration-task-title">
+                <h3>{{ task.tab_label }}</h3>
+                <small>
+                  {% if task.status == 'success' %}首帧已完成{% elif task.status == 'error' %}首帧生成失败{% else %}首帧生成中{% endif %}
+                </small>
+              </div>
+              <div class="video-migration-task-state {% if task.status == 'success' %}is-done{% elif task.status == 'error' %}is-error{% else %}is-processing{% endif %}">
+                <i class="dot"></i>{% if task.status == 'success' %}已完成{% elif task.status == 'error' %}失败{% else %}进行中{% endif %}
+              </div>
+            </div>
+            <div class="video-migration-task-body">
+              <div class="video-migration-task-thumb">
+                {% if task.result_image_url %}
+                <img src="{{ task.result_image_url }}" alt="{{ task.tab_label }} 首帧结果" referrerpolicy="no-referrer">
+                {% elif task.source_image_url %}
+                <img src="{{ task.source_image_url }}" alt="{{ task.tab_label }} 图 1">
+                {% else %}
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M10 17h4"/></svg>
+                {% endif %}
+              </div>
+              <div class="video-migration-task-steps">
+                <div class="video-migration-task-step">
+                  <span>1. 生成换脸首帧</span>
+                  <i class="video-migration-mini-light {% if task.status == 'success' %}is-done{% elif task.status == 'error' %}is-error{% else %}is-processing{% endif %}"></i>
+                </div>
+                <div class="video-migration-task-step">
+                  <span>{% if task.status == 'success' %}2. 可进入视频迁移{% elif task.status == 'error' %}2. 等待重新提交{% else %}2. 等待进入视频迁移{% endif %}</span>
+                  <i class="video-migration-mini-light"></i>
+                </div>
+              </div>
+            </div>
+            {% if task.error %}
+            <div class="video-migration-task-error">{{ task.error }}</div>
+            {% endif %}
+            <div class="video-migration-task-actions">
+              {% if task.status == 'success' %}
+              <button type="button" data-video-enter-step-two="{{ task.id }}">进入第二步</button>
+              {% elif task.status == 'error' %}
+              <button type="button" class="secondary" disabled>生成失败</button>
+              {% else %}
+              <button type="button" class="secondary" disabled>等待首帧完成</button>
+              {% endif %}
+            </div>
+          </article>
+          {% endfor %}
+          <div class="video-migration-empty-task" data-video-empty-task {% if video_migration_tasks %}hidden{% endif %}>
+            上传两张图片并点击“生成首帧图”后，任务会出现在这里。<br>
+            任务完成后可以从任务卡进入第二步。
+          </div>
+        </div>
+      </article>
+    </section>
+    {% endif %}
   </main>
   <div class="image-viewer" id="imageViewer" aria-hidden="true">
     <button type="button" class="viewer-close" aria-label="关闭大图">×</button>
@@ -573,6 +1233,45 @@
     </figure>
     <button type="button" class="viewer-nav viewer-next" data-direction="1" aria-label="下一张">›</button>
   </div>
-  <script src="/static/js/app.js?v=20260618-8"></script>
+  <div class="modal-overlay" id="remixModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="remixModalTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="remixModalTitle">选择差异化程度</h3>
+          <p class="modal-subtitle" id="remixModalNoteTitle">将基于这条内容做文案复刻</p>
+        </div>
+        <button type="button" class="modal-close" data-close-remix-modal aria-label="关闭">×</button>
+      </div>
+      <form method="post" action="/notes/copywriting-remix" class="remix-form" id="remixForm">
+        <input type="hidden" name="note_id" id="remixNoteId">
+        <label class="remix-option">
+          <input type="radio" name="differentiation_level" value="light">
+          <span>
+            <strong>轻度差异化</strong>
+            <small>保留相似框架</small>
+          </span>
+        </label>
+        <label class="remix-option">
+          <input type="radio" name="differentiation_level" value="medium" checked>
+          <span>
+            <strong>中度差异化</strong>
+            <small>保留爆款逻辑，表达明显不同</small>
+          </span>
+        </label>
+        <label class="remix-option">
+          <input type="radio" name="differentiation_level" value="high">
+          <span>
+            <strong>高度差异化</strong>
+            <small>只保留底层策略，整体重新创作</small>
+          </span>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="secondary" data-close-remix-modal>取消</button>
+          <button type="submit" data-loading-text="正在生成…">确认并生成</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="/static/js/app.js?v=20260621-1"></script>
 </body>
 </html>

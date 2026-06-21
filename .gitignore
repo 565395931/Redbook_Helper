@@ -4,6 +4,7 @@ __pycache__/
 app/data/*.db
 app/data/*.db-*
 app/data/media/
+app/data/debug/
 .env
 .codegraph/
 work/

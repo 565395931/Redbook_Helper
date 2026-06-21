@@ -23,6 +23,6 @@ if exist "vendor\Spider_XHS\package.json" (
   )
 )
 
-echo Starting Redbook Analisyze at http://127.0.0.1:8765
-uv run --python 3.11 uvicorn app.main:app --host 127.0.0.1 --port 8765
+echo Starting Redbook Analisyze at http://127.0.0.1:8765 with auto-reload
+uv run --python 3.11 uvicorn app.main:app --host 127.0.0.1 --port 8765 --reload
 pause
